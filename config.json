@@ -67,6 +67,20 @@
 			}
 		}
 	},
+	"specialInterval": {
+		"enabled": true,
+		"baseInterval": 8,
+		"difficultyIncrement": 1,
+		"levelIncrement": 0,
+		"revealWindow": 2,
+		"allowedTypes": [
+			"EXPLODING",
+			"PAINTER_HORIZONTAL",
+			"PAINTER_VERTICAL",
+			"PAINTER_DIAGONAL_NE",
+			"PAINTER_DIAGONAL_NW"
+		]
+	},
 	"scoring": {
 		"basePointsPerBall": 1,
 		"pointDoublingThreshold": 5,

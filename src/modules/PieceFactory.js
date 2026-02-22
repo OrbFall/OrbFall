@@ -25,8 +25,14 @@ class PieceFactoryClass {
 		this.piecesDropped = 0;
 		// Track current level for color selection
 		this.currentLevel = 1;
+		// Track current difficulty
+		this.currentDifficulty = 1;
 		// Track current game mode
 		this.gameMode = 'CLASSIC';
+		// Special interval tracking
+		this.specialPiecesUntilNext = null;
+		this.nextIntervalSpecialType = null;
+		this.nextIntervalSpecialColor = null;
 	}
 	
 	/**
@@ -35,6 +41,10 @@ class PieceFactoryClass {
 	reset() {
 		this.piecesDropped = 0;
 		this.currentLevel = 1;
+		this.currentDifficulty = 1;
+		this.specialPiecesUntilNext = null;
+		this.nextIntervalSpecialType = null;
+		this.nextIntervalSpecialColor = null;
 	}
 	
 	/**
@@ -69,6 +79,11 @@ class PieceFactoryClass {
 	 * @returns {Boolean} True if special ball should spawn
 	 */
 	shouldSpawnSpecialBall(specialType) {
+		const intervalEnabled = ConfigManager.get('specialInterval.enabled', false);
+		if (intervalEnabled) {
+			return false;
+		}
+		
 		let spawnRate = ConfigManager.get(`specialBalls.${specialType}.spawnRate`, 0);
 		
 		// Increase exploding ball spawn rate in Rising Tide mode
@@ -183,9 +198,15 @@ class PieceFactoryClass {
 	_generatePieceInternal(level, difficulty, debugShape = null, debugBallConfigs = null) {
 		// Store current level for color selection
 		this.currentLevel = level;
+		this.currentDifficulty = difficulty;
 		
 		// Increment pieces dropped counter
 		this.piecesDropped++;
+		
+		const intervalResult = this._tickSpecialInterval(level, difficulty);
+		const forceIntervalSpecial = intervalResult.forceSpecial;
+		const forcedSpecialType = intervalResult.forcedType;
+		const forcedSpecialColor = intervalResult.forcedColor;
 		
 		// Choose piece shape (allow debug override)
 		let shapeType;
@@ -315,7 +336,194 @@ class PieceFactoryClass {
 			balls.push(new Ball(ballType, ballColor));
 		}
 		
+		// Apply forced interval special if configured and not in debug override
+		if (forceIntervalSpecial && !debugBallConfigs && !(DebugMode.isEnabled() && (DebugMode.getType() || DebugMode.getColors()))) {
+			this._applyForcedSpecial(balls, forcedSpecialType, forcedSpecialColor, availableColors, maxSpecialBalls);
+			this._resetIntervalAfterForce(level, difficulty);
+		} else if (forceIntervalSpecial) {
+			this._resetIntervalAfterForce(level, difficulty);
+		}
+		
 		return new Piece(shapeType, balls);
+	}
+	
+	/**
+	 * Tick the special interval counter and decide if a forced special is needed
+	 * @param {Number} level - Current level
+	 * @param {Number} difficulty - Current difficulty
+	 * @returns {{forceSpecial: Boolean, forcedType: String|null, revealWindow: Number, piecesUntilNext: Number|null}}
+	 * @private
+	 */
+	_tickSpecialInterval(level, difficulty) {
+		const enabled = ConfigManager.get('specialInterval.enabled', false);
+		if (!enabled) {
+			return { forceSpecial: false, forcedType: null, forcedColor: null, revealWindow: 0, piecesUntilNext: null };
+		}
+		
+		const revealWindow = ConfigManager.get('specialInterval.revealWindow', 2);
+		if (!this.specialPiecesUntilNext || this.specialPiecesUntilNext <= 0) {
+			this.specialPiecesUntilNext = this._getIntervalLength(level, difficulty);
+			this.nextIntervalSpecialType = null;
+			this.nextIntervalSpecialColor = null;
+		}
+		
+		this.specialPiecesUntilNext -= 1;
+		
+		const shouldReveal = this.specialPiecesUntilNext > 0 && this.specialPiecesUntilNext <= revealWindow;
+		if (shouldReveal && !this.nextIntervalSpecialType) {
+			this.nextIntervalSpecialType = this._pickIntervalSpecialType();
+			this.nextIntervalSpecialColor = this._pickIntervalSpecialColor(level, this.nextIntervalSpecialType);
+		}
+		
+		const forceSpecial = this.specialPiecesUntilNext <= 0;
+		let forcedType = null;
+		let forcedColor = null;
+		if (forceSpecial) {
+			forcedType = this.nextIntervalSpecialType || this._pickIntervalSpecialType();
+			forcedColor = this.nextIntervalSpecialColor || this._pickIntervalSpecialColor(level, forcedType);
+		}
+		
+		return {
+			forceSpecial: forceSpecial,
+			forcedType: forcedType,
+			forcedColor: forcedColor,
+			revealWindow: revealWindow,
+			piecesUntilNext: this.specialPiecesUntilNext
+		};
+	}
+	
+	/**
+	 * Reset interval counters after a forced special is used
+	 * @param {Number} level - Current level
+	 * @param {Number} difficulty - Current difficulty
+	 * @returns {void}
+	 * @private
+	 */
+	_resetIntervalAfterForce(level, difficulty) {
+		this.specialPiecesUntilNext = this._getIntervalLength(level, difficulty);
+		this.nextIntervalSpecialType = null;
+		this.nextIntervalSpecialColor = null;
+	}
+	
+	/**
+	 * Get interval length based on level and difficulty
+	 * @param {Number} level - Current level
+	 * @param {Number} difficulty - Current difficulty
+	 * @returns {Number} Interval length in pieces
+	 * @private
+	 */
+	_getIntervalLength(level, difficulty) {
+		const base = ConfigManager.get('specialInterval.baseInterval', 8);
+		const difficultyIncrement = ConfigManager.get('specialInterval.difficultyIncrement', 1);
+		const levelIncrement = ConfigManager.get('specialInterval.levelIncrement', 0);
+		const length = base + (Math.max(0, difficulty - 1) * difficultyIncrement) + (Math.max(0, level - 1) * levelIncrement);
+		return Math.max(1, Math.round(length));
+	}
+	
+	/**
+	 * Choose a special type for interval-based spawning
+	 * @returns {String} Ball type constant
+	 * @private
+	 */
+	_pickIntervalSpecialType() {
+		const allowed = ConfigManager.get('specialInterval.allowedTypes', []);
+		const fallback = [
+			CONSTANTS.BALL_TYPES.EXPLODING,
+			CONSTANTS.BALL_TYPES.PAINTER_HORIZONTAL,
+			CONSTANTS.BALL_TYPES.PAINTER_VERTICAL,
+			CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NE,
+			CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NW
+		];
+		
+		const mapped = allowed
+			.map(type => CONSTANTS.BALL_TYPES[type])
+			.filter(type => type);
+		const pool = mapped.length > 0 ? mapped : fallback;
+		return pool[randomInt(0, pool.length - 1)];
+	}
+	
+	/**
+	 * Pick a color for interval-based specials based on level colors
+	 * @param {Number} level - Current level
+	 * @param {String} specialType - Ball type constant
+	 * @returns {String} Hex color code
+	 * @private
+	 */
+	_pickIntervalSpecialColor(level, specialType) {
+		if (specialType === CONSTANTS.BALL_TYPES.BLOCKING) {
+			return ConfigManager.get('colors.special.blocking', '#808080');
+		}
+		const availableColors = this.getAvailableColors(level);
+		return availableColors[randomInt(0, availableColors.length - 1)];
+	}
+	
+	/**
+	 * Force a special ball into the piece if under the max special cap
+	 * @param {Array<Ball>} balls - Balls in the piece
+	 * @param {String|null} forcedType - Ball type to inject
+	 * @param {Array<String>} availableColors - Available normal colors
+	 * @param {Number} maxSpecialBalls - Max specials per piece
+	 * @returns {void}
+	 * @private
+	 */
+	_applyForcedSpecial(balls, forcedType, forcedColor, availableColors, maxSpecialBalls) {
+		if (!forcedType) {
+			return;
+		}
+		
+		const currentSpecials = balls.filter(ball => ball.isSpecial()).length;
+		if (currentSpecials >= maxSpecialBalls) {
+			return;
+		}
+		
+		const normalIndices = [];
+		for (let i = 0; i < balls.length; i++) {
+			if (!balls[i].isSpecial()) {
+				normalIndices.push(i);
+			}
+		}
+		
+		if (normalIndices.length === 0) {
+			return;
+		}
+		
+		const targetIndex = normalIndices[randomInt(0, normalIndices.length - 1)];
+		const color = forcedColor || this._getIntervalSpecialColor(forcedType, availableColors);
+		balls[targetIndex] = new Ball(forcedType, color);
+	}
+	
+	/**
+	 * Get color for interval-based specials, respecting level colors
+	 * @param {String} ballType - Type of ball
+	 * @param {Array<String>} availableColors - Available normal colors
+	 * @returns {String} Hex color code
+	 * @private
+	 */
+	_getIntervalSpecialColor(ballType, availableColors) {
+		if (ballType === CONSTANTS.BALL_TYPES.BLOCKING) {
+			return ConfigManager.get('colors.special.blocking', '#808080');
+		}
+		return availableColors[randomInt(0, availableColors.length - 1)];
+	}
+	
+	/**
+	 * Get special interval status for HUD display
+	 * @returns {{enabled: Boolean, piecesUntilNext: Number|null, revealWindow: Number, nextSpecialType: String|null}}
+	 */
+	getSpecialIntervalStatus() {
+		const enabled = ConfigManager.get('specialInterval.enabled', false);
+		if (!enabled) {
+			return { enabled: false, piecesUntilNext: null, revealWindow: 0, nextSpecialType: null };
+		}
+		
+		const revealWindow = ConfigManager.get('specialInterval.revealWindow', 2);
+		return {
+			enabled: true,
+			piecesUntilNext: this.specialPiecesUntilNext,
+			revealWindow: revealWindow,
+			nextSpecialType: this.nextIntervalSpecialType,
+			nextSpecialColor: this.nextIntervalSpecialColor
+		};
 	}
 	
 	/**
@@ -344,12 +552,6 @@ class PieceFactoryClass {
 		}
 	}
 	
-	/**
-	 * Reset the factory state (call when starting new game)
-	 */
-	reset() {
-		this.piecesDropped = 0;
-	}
 }
 
 // Export singleton instance

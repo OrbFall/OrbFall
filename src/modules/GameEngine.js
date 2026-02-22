@@ -779,6 +779,57 @@ class GameEngineClass {
 		if (levelDisplay) {
 			levelDisplay.textContent = this.level;
 		}
+		
+		// Update special interval indicator
+		const specialIndicator = document.getElementById('specialIndicator');
+		const specialIndicatorIcon = document.getElementById('specialIndicatorIcon');
+		const specialIndicatorText = document.getElementById('specialIndicatorText');
+		if (specialIndicator && specialIndicatorIcon && specialIndicatorText) {
+			const intervalStatus = PieceFactory.getSpecialIntervalStatus?.();
+			const canShow = intervalStatus && intervalStatus.enabled && intervalStatus.piecesUntilNext !== null;
+			if (canShow) {
+				const inRevealWindow = intervalStatus.piecesUntilNext > 0 && intervalStatus.piecesUntilNext <= intervalStatus.revealWindow;
+				if (inRevealWindow && intervalStatus.nextSpecialType) {
+					const meta = this._getSpecialIndicatorMeta(intervalStatus.nextSpecialType);
+					specialIndicatorIcon.className = `special-indicator-icon ${meta.className}`;
+					specialIndicatorIcon.textContent = '';
+					if (intervalStatus.nextSpecialColor) {
+						specialIndicatorIcon.style.backgroundColor = intervalStatus.nextSpecialColor;
+						specialIndicatorIcon.style.boxShadow = `0 0 8px ${intervalStatus.nextSpecialColor}`;
+					} else {
+						specialIndicatorIcon.style.backgroundColor = '';
+						specialIndicatorIcon.style.boxShadow = '';
+					}
+					specialIndicatorText.textContent = `Next: ${meta.label} in ${intervalStatus.piecesUntilNext}`;
+				} else {
+					specialIndicatorIcon.className = 'special-indicator-icon pending';
+					specialIndicatorIcon.textContent = '?';
+					specialIndicatorIcon.style.backgroundColor = '';
+					specialIndicatorIcon.style.boxShadow = '';
+					specialIndicatorText.textContent = `Special in ${intervalStatus.piecesUntilNext}`;
+				}
+				specialIndicator.style.display = '';
+			} else {
+				specialIndicator.style.display = 'none';
+			}
+		}
+	}
+	
+	/**
+	 * Get label and CSS class for a special indicator
+	 * @param {String} specialType - Ball type constant
+	 * @returns {{label: String, className: String}} Indicator metadata
+	 * @private
+	 */
+	_getSpecialIndicatorMeta(specialType) {
+		const metaMap = {
+			[CONSTANTS.BALL_TYPES.EXPLODING]: { label: 'Exploding', className: 'exploding' },
+			[CONSTANTS.BALL_TYPES.PAINTER_HORIZONTAL]: { label: 'Painter H', className: 'painter-h' },
+			[CONSTANTS.BALL_TYPES.PAINTER_VERTICAL]: { label: 'Painter V', className: 'painter-v' },
+			[CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NE]: { label: 'Painter DNE', className: 'painter-dne' },
+			[CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NW]: { label: 'Painter DNW', className: 'painter-dnw' }
+		};
+		return metaMap[specialType] || { label: 'Special', className: 'pending' };
 	}
 	
 	/**

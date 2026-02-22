@@ -694,6 +694,83 @@ body::after {
 	height: 72px;
 }
 
+.hud-item.special-indicator {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: 0.4rem;
+	font-size: 0.65rem;
+	color: #00ff88;
+	letter-spacing: 0.05rem;
+	text-transform: uppercase;
+	padding: 0.3rem 0.5rem;
+	border: 1px solid rgba(0, 255, 136, 0.4);
+	border-radius: 6px;
+	background: rgba(0, 255, 136, 0.08);
+}
+
+.special-indicator-icon {
+	width: 20px;
+	height: 20px;
+	border-radius: 50%;
+	border: 1px solid #666;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 12px;
+	font-weight: bold;
+	color: #ffffff;
+	box-shadow: 0 0 6px rgba(0, 0, 0, 0.4);
+}
+
+.special-indicator-text {
+	white-space: nowrap;
+}
+
+.special-indicator-icon.exploding {
+	background-color: var(--color-orb-red);
+	box-shadow: var(--glow-red);
+	position: relative;
+}
+
+.special-indicator-icon.exploding::before {
+	content: '';
+	position: absolute;
+	width: 22px;
+	height: 22px;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M 50,26 L 54.6,38.9 L 67,33 L 61.1,45.4 L 74,50 L 61.1,54.6 L 67,67 L 54.6,61.1 L 50,74 L 45.4,61.1 L 33,67 L 38.9,54.6 L 26,50 L 38.9,45.4 L 33,33 L 45.4,38.9 Z" fill="none" stroke="white" stroke-width="6" stroke-linejoin="miter"/></svg>');
+	background-size: contain;
+	background-repeat: no-repeat;
+}
+
+.special-indicator-icon.painter-h {
+	background-color: var(--color-orb-green);
+	box-shadow: var(--glow-green);
+}
+
+.special-indicator-icon.painter-v {
+	background-color: var(--color-orb-blue);
+	box-shadow: var(--glow-blue);
+}
+
+.special-indicator-icon.painter-dne {
+	background-color: var(--color-orb-orange);
+	box-shadow: var(--glow-orange);
+}
+
+.special-indicator-icon.painter-dnw {
+	background-color: var(--color-orb-purple);
+	box-shadow: var(--glow-purple);
+}
+
+.special-indicator-icon.pending {
+	background-color: rgba(255, 255, 255, 0.15);
+	box-shadow: 0 0 6px rgba(255, 255, 255, 0.2);
+}
+
 .hud-item {
 	display: flex;
 	flex-direction: column;
