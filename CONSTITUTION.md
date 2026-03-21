@@ -306,7 +306,7 @@ We envision a game that:
 **Scenario:** Popular feature request conflicts with performance requirements.  
 **Resolution:** Find optimized solution or defer until technical solution found.
 
-**Scenario:** BMAC supporter requests pay-to-win feature.  
+**Scenario:** LemonSqueezy license holder requests pay-to-win feature.  
 **Resolution:** Politely decline. Offer alternative supporter benefits.
 
 ---
@@ -453,7 +453,7 @@ We envision a game that:
 
 **Financial:**
 - Monthly ad revenue
-- BMAC contributions
+- LemonSqueezy license sales
 - Hosting costs
 - Revenue growth rate
 - Ad-free conversion rate

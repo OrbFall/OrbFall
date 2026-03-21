@@ -850,53 +850,47 @@ All game parameters should be configurable via JSON:
   - Responsive layout adjusts when ads load
 
 #### 15.1.3 Ad-Free State
-- **Trigger:** Buy Me a Coffee donation received
-- **Duration:** Configurable periods based on donation amount
-  - $3 donation: 7 days ad-free
-  - $5 donation: 30 days ad-free
-  - $10 donation: 90 days ad-free
-  - Custom amounts: Scale proportionally
-- **Storage:** localStorage tracks ad-free expiration timestamp
-- **Verification:** Check on every page load and ad display attempt
+- **Trigger:** LemonSqueezy license key purchase and activation
+- **Duration:** Perpetual (no expiry) unless the license key has an explicit expiry date set in LemonSqueezy
+- **Storage:** `monetization_license` (JSON) and `monetization_ad_free_until` (`"license"`) in localStorage
+- **Verification:** Validated against the LemonSqueezy API on activation; re-validated every 7 days on page load
 - **Visual Indicator:** "Ad-Free Mode" badge in HUD when active
 
-### 15.2 Buy Me a Coffee Integration
+### 15.2 LemonSqueezy License Integration
 
-#### 15.2.1 BMAC Widget Placement
-- **Primary Button:** Floating "☕ Support" button in top-right corner
-  - Always visible, non-intrusive
-  - Opens BMAC widget/page in new tab
+#### 15.2.1 Purchase Button Placement
+- **Primary Button:** Floating "✨ Go Ad-Free" button in top-right corner
+  - Visible only when ad-free is not active
+  - Links directly to LemonSqueezy store checkout page in a new tab
 - **Secondary Placement:**
-  - Game over screen: "Enjoying the game? Support development!"
-  - Settings menu: "Remove ads by supporting the developer"
+  - Settings menu: "Activate License Key" option to enter a purchased key
+  - Settings menu: "Remove ads" link to the store
 
-#### 15.2.2 Donation Detection & Processing
-**Manual Token System:**
-- After donating via BMAC, user receives a unique token/code
-- User enters token in game settings to activate ad-free period
-- Token validation:
-  - Hash-based verification using HMAC-SHA256
-  - Token format: `BMAC-[amount]-[timestamp]-[signature]`
-  - Generated server-side (simple API endpoint or manual generation)
-  - Optional validation endpoint for stricter verification when available
-  - Single-use tokens to prevent sharing
+#### 15.2.2 License Key Activation Flow
+1. User purchases ad-free license on the LemonSqueezy store
+2. LemonSqueezy emails a license key (UUID format) to the buyer
+3. User opens Settings → "Activate License Key"
+4. Enters key into the activation dialog
+5. Game calls `POST https://api.lemonsqueezy.com/v1/licenses/activate` with:
+   - `license_key`: the entered key
+   - `instance_name`: `"OrbFall-ChromaCrush"`
+6. On success:
+   - License data (key, instance ID, expiry, customer name) stored in localStorage
+   - `monetization_ad_free_until` set to `"license"`
+   - All ads removed immediately
+   - "Go Ad-Free" button removed
+   - Confirmation message shown
+7. On failure: error message shown (invalid key, already activated on max instances, etc.)
 
-**Token Redemption Flow:**
-1. User clicks "Redeem Code" in settings menu
-2. Enters BMAC token
-3. Frontend validates signature and parses amount/duration
-4. Stores expiration timestamp in localStorage
-5. Shows confirmation message with expiration date
-6. Removes all ads immediately
-
-**Alternative: Honor System:**
-- Users can manually activate ad-free mode via settings
-- Trust-based system with clear messaging about supporting development
-- Simpler implementation, relies on user goodwill
+**Periodic Re-validation:**
+- On page load, if a stored license exists and last validation was 7+ days ago,
+  the game calls `POST https://api.lemonsqueezy.com/v1/licenses/validate`
+- If the API returns `valid: false`, ad-free state is cleared
+- Network errors during re-validation do not revoke ad-free access (fail-open)
 
 #### 15.2.3 Thank You Experience
-- **Confirmation Message:** "Thank you for your support! Ads disabled for [duration]"
-- **Supporter Badge:** Visual indicator in game (optional trophy/star icon)
+- **Confirmation Message:** "Thank you for your support! Ads have been permanently disabled."
+- **Supporter Badge:** "Ad-Free" visual indicator in the HUD
 - **Special Features (Optional Future Enhancement):**
   - Custom color themes for supporters
   - Exclusive game modes
@@ -924,17 +918,12 @@ All monetization settings configurable via `config.json`:
         "skipDelay": 5000
       }
     },
-    "bmac": {
+    "lemonsqueezy": {
       "enabled": true,
-      "username": "yourusername",
-      "buttonText": "☕ Support",
-      "tokenValidation": true,
-      "validationEndpoint": "",
-      "adFreePeriods": {
-        "3": 7,
-        "5": 30,
-        "10": 90
-      }
+      "storeUrl": "https://gusto4tech.lemonsqueezy.com/buy/your-product-id",
+      "storeId": 0,
+      "productId": 0,
+      "buttonText": "✨ Go Ad-Free"
     }
   }
 }

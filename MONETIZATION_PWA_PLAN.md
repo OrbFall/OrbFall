@@ -1245,15 +1245,20 @@ export default class MonetizationManager {
 Update settings menu to include "Redeem Support Code" button that calls `monetizationManager.openRedeemDialog()`.
 
 **Deliverables:**
-- ✅ MonetizationManager.js module created
-- ✅ BMAC button integrated
-- ✅ Token redemption system implemented
-- ✅ Ad-free state management working
-- ✅ BMAC styles added
+- ✅ MonetizationManager.js module created (migrated to LemonSqueezy)
+- ✅ "Go Ad-Free" purchase button integrated
+- ✅ License key activation dialog implemented
+- ✅ Ad-free state management working (license-based, perpetual)
+- ✅ Supporter styles added
 
 ---
 
-## Phase 5: Token Generation Utility (Days 13-14)
+## Phase 5: Token Generation Utility (Days 13-14) — CANCELLED
+
+> **This phase is no longer required.** The original plan used a custom BMAC token
+> system (HMAC-signed tokens, manual generation script, optional validation server).
+> We migrated to **LemonSqueezy**, which handles license key generation, delivery,
+> and validation natively via its API. No custom tooling needed.
 
 ### 5.1 Create Token Generator Tool
 
@@ -1388,9 +1393,9 @@ server.listen(PORT, () => {
 ```
 
 **Deliverables:**
-- ✅ Token generator tool created
-- ✅ Optional validation server ready
-- ✅ Documentation for token generation process
+- ~~Token generator tool created~~ (N/A — LemonSqueezy handles this)
+- ~~Optional validation server ready~~ (N/A — LemonSqueezy handles this)
+- ~~Documentation for token generation process~~ (N/A)
 
 ---
 
@@ -1418,8 +1423,8 @@ window.monetizationManager = monetizationManager;
 
 Add new settings options:
 - **Install App** button (calls `pwaManager.triggerInstall()`)
-- **Redeem Support Code** button (calls `monetizationManager.openRedeemDialog()`)
-- **Support Development** link (opens BMAC page)
+- **Activate License Key** button (calls `MonetizationManager.showActivateDialog()`)
+- **Support Development** link (opens LemonSqueezy store page)
 - **Ad-Free Status** display (if active)
 
 ### 6.3 Update HUD
