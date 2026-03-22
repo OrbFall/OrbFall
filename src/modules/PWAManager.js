@@ -152,20 +152,22 @@ class PWAManagerClass {
 	}
 
 	/**
-	 * Show the "Install App" setting row
+	 * Show the "Install App" setting row.
+	 * The row is always visible in HTML; this is kept for compatibility.
 	 * @private
 	 * @returns {void}
 	 */
 	_showInstallButton() {
-		const setting = document.getElementById('pwaInstallSetting');
+		// Row is always visible — highlight button to indicate prompt is ready
+		const btn = document.getElementById('installAppButton');
 
-		if (setting) {
-			setting.style.display = '';
+		if (btn) {
+			btn.classList.add('pwa-prompt-ready');
 		}
 	}
 
 	/**
-	 * Hide the "Install App" setting row (after install or if prompt unavailable)
+	 * Hide the "Install App" setting row after the app has been installed.
 	 * @private
 	 * @returns {void}
 	 */
@@ -330,7 +332,13 @@ class PWAManagerClass {
 	 */
 	async triggerInstall() {
 		if (!this.deferredPrompt) {
-			console.log('[PWA] No install prompt available');
+			if (this.isInstalled) {
+				return;
+			}
+			// Chrome hasn't offered the prompt yet (engagement heuristic) or it was
+			// recently dismissed. Show manual instructions as a fallback.
+			this._showManualInstallInstructions();
+			console.log('[PWA] No install prompt available — showing manual instructions');
 			return;
 		}
 
@@ -345,6 +353,39 @@ class PWAManagerClass {
 			this._hideInstallButton();
 			this._showInstalledToast();
 		}
+	}
+
+	/**
+	 * Show a toast with manual "Add to Home Screen" instructions for browsers
+	 * where the automatic install prompt is not yet available.
+	 * @private
+	 * @returns {void}
+	 */
+	_showManualInstallInstructions() {
+		const toast = document.createElement('div');
+		toast.className = 'pwa-manual-install-toast';
+		toast.innerHTML = [
+			'<div class="pwa-manual-install-header">📲 <strong>Add to Home Screen</strong></div>',
+			'<ol class="pwa-manual-install-steps">',
+			'<li>Tap <strong>⋮</strong> (Chrome menu) at the top-right</li>',
+			'<li>Tap <strong>"Add to Home screen"</strong></li>',
+			'<li>Tap <strong>"Add"</strong> to confirm</li>',
+			'</ol>',
+			'<button class="pwa-manual-install-close">Got it</button>'
+		].join('');
+
+		document.body.appendChild(toast);
+
+		toast.querySelector('.pwa-manual-install-close').addEventListener('click', () => {
+			toast.remove();
+		});
+
+		// Auto-dismiss after 12 seconds if user doesn't tap
+		setTimeout(() => {
+			if (toast.parentNode) {
+				toast.remove();
+			}
+		}, 12000);
 	}
 
 	/**

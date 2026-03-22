@@ -2084,3 +2084,58 @@ body::after {
 .pwa-install-toast-dismiss:hover {
 	color: #fff;
 }
+
+/* ---- Manual Install Instructions Toast ---- */
+.pwa-manual-install-toast {
+	position: fixed;
+	bottom: 24px;
+	left: 50%;
+	transform: translateX(-50%);
+	background: linear-gradient(135deg, #1a2f50, #0d1f36);
+	color: #fff;
+	padding: 16px 20px;
+	border-radius: 12px;
+	box-shadow: 0 6px 28px rgba(0, 0, 0, 0.6);
+	border: 1px solid #4080FF;
+	z-index: 10004;
+	font-size: 0.9rem;
+	max-width: 340px;
+	width: calc(100% - 48px);
+	animation: pwaToastSlideIn 0.35s ease;
+}
+
+.pwa-manual-install-header {
+	font-size: 1rem;
+	margin-bottom: 10px;
+}
+
+.pwa-manual-install-steps {
+	margin: 0 0 12px 18px;
+	padding: 0;
+	line-height: 1.7;
+	font-size: 0.87rem;
+	color: #cde;
+}
+
+.pwa-manual-install-close {
+	display: block;
+	width: 100%;
+	padding: 7px 0;
+	background: #4080FF;
+	color: #fff;
+	border: none;
+	border-radius: 6px;
+	font-size: 0.85rem;
+	font-weight: bold;
+	cursor: pointer;
+	transition: opacity 0.2s;
+}
+
+.pwa-manual-install-close:hover {
+	opacity: 0.85;
+}
+
+/* Subtle highlight when Chrome's native prompt is ready */
+.pwa-prompt-ready {
+	background: linear-gradient(90deg, #4080FF, #5b9aff) !important;
+}
