@@ -256,7 +256,7 @@
 		"ads": {
 			"enabled": true,
 			"provider": "adsense",
-			"adSenseId": "ca-pub-XXXXXXXXXX",
+			"adSenseId": "ca-pub-9808238396490185",
 			"slotIds": {
 				"banner": "XXXXXXXXXX",
 				"interstitial": "XXXXXXXXXX",

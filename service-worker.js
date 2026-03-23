@@ -25,6 +25,7 @@ const CORE_ASSETS = [
 	'/guide.html',
 	'/config.json',
 	'/manifest.json',
+	'/ads.txt',
 
 	// Styles
 	'/src/styles/main.css',

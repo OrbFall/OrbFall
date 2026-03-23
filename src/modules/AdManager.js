@@ -104,18 +104,12 @@ class AdManagerClass {
 		if (this.scriptLoaded) return;
 
 		const adSenseId = ConfigManager.get('monetization.ads.adSenseId', '');
-		if (!adSenseId || adSenseId === 'ca-pub-XXXXXXXXXX') {
-			// Placeholder ID - don't load real script
-			this.scriptLoaded = true;
+		if (!adSenseId) {
 			return;
 		}
 
-		const script = document.createElement('script');
-		script.async = true;
-		script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adSenseId}`;
-		script.crossOrigin = 'anonymous';
-		document.head.appendChild(script);
-
+		// The AdSense script is already loaded via <script> in index.html.
+		// Mark as loaded so interstitial push() calls work immediately.
 		this.scriptLoaded = true;
 	}
 
@@ -220,7 +214,7 @@ class AdManagerClass {
 		const adSenseId = ConfigManager.get('monetization.ads.adSenseId', '');
 		const slotId = ConfigManager.get('monetization.ads.slotIds.interstitial', '');
 
-		if (adSenseId && adSenseId !== 'ca-pub-XXXXXXXXXX' && slotId && slotId !== 'XXXXXXXXXX') {
+		if (adSenseId && slotId && slotId !== 'XXXXXXXXXX') {
 			const ins = document.createElement('ins');
 			ins.className = 'adsbygoogle';
 			ins.style.display = 'block';
