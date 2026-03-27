@@ -13,7 +13,7 @@ A Tetris-inspired puzzle game where colored ball pieces fall from the top and st
 ## 2. Game Board & Grid
 
 ### 2.1 Grid Specifications
-- **Dimensions:** 15 columns × 25 rows
+- **Dimensions:** 15 columns × 22 rows
 - **Cell Type:** Each cell can contain a ball or be empty
 - **Rendering:** Programmatic graphics (SVG/Canvas), encapsulated for future replacement
 
@@ -24,7 +24,7 @@ A Tetris-inspired puzzle game where colored ball pieces fall from the top and st
 │                                                   Best: 5,678  │
 ├─────────────┬─────────────────────────────────┬───────────────┤
 │             │                                 │               │
-│  Orb Types  │    [Game Board 15×25]          │  Next Piece   │
+│  Orb Types  │    [Game Board 15×22]          │  Next Piece   │
 │  Legend     │                                 │   Preview     │
 │             │                                 │               │
 │  • Normal   │                                 │  [4×4 grid]   │
@@ -344,17 +344,43 @@ As level numbers increase (within same difficulty):
 - Blocking ball spawn rate increases
 - More colors unlock at specific levels (3, 7, 11, 15, 19)
 
-### 6.4 Feature Unlock Schedule (Recommended)
-The following progression reduces early cognitive load and introduces counters before threats. All thresholds are configurable via `config.json`.
+### 6.4 Feature Unlock Schedule
+The following progression reduces early cognitive load and introduces counters before threats.
+All thresholds are configurable via `specialBalls.featureUnlocks` in `config.json`.
 
-- **Levels 1-2:** 3 colors, no special balls.
-- **Levels 3-4:** Introduce horizontal painters only.
-- **Levels 5-6:** Add vertical painters.
-- **Levels 7-8:** Add diagonal painters
-- **Levels 9-10:** Introduce bombs at low spawn rate to establish the counter.
-- **Levels 11+:** Introduceng blocki balls; slightly increase bomb rate so blockers are consistently answerable.
+| Level Range | Newly Available Special Types | Notes |
+|-------------|-------------------------------|-------|
+| 1–2 | *(none)* | Normal balls only; learn colors and piece movement |
+| 3–4 | `PAINTER_HORIZONTAL` | Introduces painting mechanic — horizontal rows |
+| 5–6 | `PAINTER_VERTICAL` | Adds column painting |
+| 7–8 | `PAINTER_DIAGONAL_NE`, `PAINTER_DIAGONAL_NW` | Completes the painter family |
+| 9+ | `EXPLODING` | Bomb introduced as a counter to blocking balls |
+| 11+ | Blocking balls (separate spawn rules, see §3.3.3) | Rate scales with difficulty |
 
-**Color Cap Guidance:** Keep a max of 3-4 colors through roughly Level 12, then ramp to 5-6 once specials are understood. Reserve 7-8 colors for higher difficulties.
+**Implementation:** `PieceFactory._getUnlockedSpecialTypes(level)` reads `specialBalls.featureUnlocks`
+and returns all types whose configured minimum level ≤ current level.  This filter is applied in all
+three spawn paths:
+- **Interval system** (`_pickIntervalSpecialType`) — forced guarantees only pick unlocked types
+- **Random spawn** (`generateSpecialBall`) — eligible type list is filtered before probability roll
+- **Special bag** (`_getSpecialBagPool`) — bag is built only from unlocked types; bag is discarded on level change
+
+When no types are unlocked (levels 1–2) the interval counter still ticks, but no forced special is
+injected and random spawns return `null`.
+
+**Default `config.json` values:**
+```json
+"specialBalls": {
+  "featureUnlocks": {
+    "PAINTER_HORIZONTAL":  3,
+    "PAINTER_VERTICAL":    5,
+    "PAINTER_DIAGONAL_NE": 7,
+    "PAINTER_DIAGONAL_NW": 7,
+    "EXPLODING":           9
+  }
+}
+```
+
+**Color Cap Guidance:** Keep a max of 3–4 colors through roughly Level 12, then ramp to 5–6 once specials are understood. Reserve 7–8 colors for higher difficulties.
 
 ---
 
@@ -370,7 +396,7 @@ The following progression reduces early cognitive load and introduces counters b
 │  ORB TYPES     │                                  │   NEXT PIECE       │
 │                │                                  │                    │
 │  🔴 Normal     │                                  │   ┌─┬─┬─┬─┐       │
-│    Standard    │      [15 cols × 25 rows]         │   │🔴│🔴│  │  │       │
+│    Standard    │      [15 cols × 22 rows]         │   │🔴│🔴│  │  │       │
 │                │                                  │   ├─┼─┼─┼─┤       │
 │  ⭐ Exploding  │       GAME BOARD                 │   │🔴│🔴│  │  │       │
 │    Destroys    │                                  │   ├─┼─┼─┼─┤       │
@@ -904,10 +930,9 @@ All monetization settings configurable via `config.json`:
     "ads": {
       "enabled": true,
       "provider": "adsense",
-      "adSenseId": "ca-pub-XXXXXXXXXX",
+      "adSenseId": "ca-pub-9808238396490185",
       "slotIds": {
         "banner": "XXXXXXXXXX",
-        "mobileBanner": "XXXXXXXXXX",
         "interstitial": "XXXXXXXXXX",
         "sidebar": "XXXXXXXXXX"
       },
@@ -939,39 +964,50 @@ All monetization settings configurable via `config.json`:
 **File:** `manifest.json` in root directory
 
 **Required Fields:**
-- **name:** "Ball Drop Puzzle Game"
-- **short_name:** "Ball Drop"
-- **description:** "Match colored balls in this Tetris-inspired puzzle game"
+- **name:** "Orb•Fall: ChromaCrush"
+- **short_name:** "Orb•Fall"
+- **description:** "Match colored orbs in this Tetris-inspired puzzle game with special power orbs."
 - **start_url:** "/"
 - **display:** "standalone" (full-screen app experience)
-- **background_color:** "#1a1a1a" (matches game background)
+- **background_color:** "#0f0f1e" (matches game background)
 - **theme_color:** "#4080FF" (primary blue)
-- **orientation:** "portrait-primary" (mobile) / "any" (desktop)
-- **icons:** Multiple sizes for different devices
-  - 72×72, 96×96, 128×128, 144×144, 152×152, 192×192, 384×384, 512×512
-  - PNG format with transparency
+- **orientation:** "any"
+- **icons:** Two key sizes, each supplied as separate `any` and `maskable` files:
+  - `icon-192.png` / `icon-192-maskable.png` — 192×192 PNG
+  - `icon-512.png` / `icon-512-maskable.png` — 512×512 PNG
+  - `Logotrans.png` — 1024×1024 PNG (`purpose: any`)
+  - `any` files: full-bleed logo on dark background
+  - `maskable` files: logo at 80% scale within the Android safe zone on dark background
+  - PNG format with opaque dark background (no transparency on maskable)
+
+**AdSense Verification:**
+- `<meta name="google-adsense-account" content="ca-pub-9808238396490185">` is required in `<head>`
+
+**ads.txt:**
+- `ads.txt` must be deployed at the root of the domain (e.g. `https://yourdomain.com/ads.txt`)
+- Content: `google.com, pub-9808238396490185, DIRECT, f08c47fec0942fa0`
 
 #### 16.1.2 Service Worker
 **File:** `service-worker.js` in root directory
 
 **Caching Strategy:**
 - **App Shell Pattern:** Cache HTML, CSS, JS, and core assets
-- **Cache-First for Static Assets:**
-  - CSS files
-  - JavaScript files
-  - Images/icons
-  - Audio files (if implemented)
-- **Network-First for Dynamic Content:**
-  - Config file (check for updates)
-  - Ad scripts (always fresh)
+- **Cache-First for all same-origin GET requests** (static and config alike):
+  - CSS files, JavaScript modules, images/icons
+  - `config.json`, `manifest.json`, `ads.txt`
+  - Uncached assets are fetched from the network and stored for future use
+- **Pass-through (no caching) for cross-origin requests:**
+  - Ad scripts (always fresh from Google)
+  - Analytics, weather API, LemonSqueezy API
 - **Offline Fallback:**
   - Show cached game if network unavailable
-  - Display "Offline Mode" indicator
-  - Disable ads when offline
+  - Display "Offline Mode" indicator in HUD
+  - Ads silently disabled when offline
 
 **Cache Versioning:**
-- Version number in cache name: `ball-drop-v1`
-- Increment version on updates to force cache refresh
+- Cache name format: `orbfall-vMAJOR.MINOR.PATCH` (e.g. `orbfall-v1.0.4`)
+- Increment the version on any deployment to force a full cache refresh
+- On activate, all caches whose name does not match the current version are deleted
 
 **Service Worker Lifecycle:**
 ```javascript
@@ -998,16 +1034,20 @@ self.addEventListener('fetch', event => {
 ### 16.2 Install Prompts
 
 #### 16.2.1 Browser Install Prompt
-- **Trigger:** After 2 minutes of gameplay or 3 game completions
-- **Prompt Text:** "Install Ball Drop for quick access and offline play!"
-- **Defer Logic:** If user dismisses, wait 7 days before prompting again
-- **Storage:** Track last prompt time in localStorage
+- **Trigger:** Captured via `beforeinstallprompt` event; `preventDefault()` is called to suppress the browser mini-infobar so the game can control the UX
+- **Toast:** A bottom-centre install toast (`#pwaInstallToast`) is shown when the prompt is available, with "Install" and dismiss (✕) buttons
+- **Fallback:** If Chrome has not offered the native prompt (engagement heuristic not yet met, or prompt was recently dismissed), tapping the install button shows a manual step-by-step toast:
+  1. Tap ⋮ (Chrome menu) → "Add to Home screen" → "Add"
+  - Auto-dismisses after 12 seconds
 
 #### 16.2.2 Custom Install Button
 - **Location:** Settings menu
-- **Text:** "📥 Install App"
-- **Behavior:** Triggers browser's native install prompt
-- **Visibility:** Only shown if app is installable and not already installed
+- **Text:** "📲 Install App" (button ID: `installAppButton`)
+- **Behavior:**
+  - If the native `beforeinstallprompt` is held: triggers the native prompt directly
+  - If not available: shows the manual install instructions fallback toast (see 16.2.1)
+  - If app is already installed: button row is hidden (`#pwaInstallSetting` `display:none`)
+- **Visibility:** Always visible in Settings unless the app is already installed
 
 ### 16.3 PWA Enhancements
 
@@ -1040,6 +1080,6 @@ self.addEventListener('fetch', event => {
 
 ---
 
-**Document Version:** 3.0  
-**Last Updated:** February 2026  
-**Status:** Living Document - Updated with Monetization & PWA Requirements
+**Document Version:** 3.1  
+**Last Updated:** March 2026  
+**Status:** Living Document - Updated with Monetization, PWA, AdSense & As-Built Corrections

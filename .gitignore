@@ -1,0 +1,26 @@
+# ─── Node / Test tooling ──────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# ─── OS / Editor artifacts ────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+
+# ─── VS Code (keep shared settings, ignore personal workspace state) ──────────
+.vscode/*.log
+
+# ─── Build / generated output ────────────────────────────────────────────────
+dist/
+build/
+
+# ─── Environment / secrets ───────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local

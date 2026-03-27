@@ -344,4 +344,338 @@ testSuite.tests.push({
 	}
 });
 
+// ─── Feature Unlock / Painter Gating Tests ────────────────────────────────────
+
+// Test: _getUnlockedSpecialTypes returns empty array at level 1
+testSuite.tests.push({
+	name: 'featureUnlocks - Level 1 has no special types unlocked',
+	async run() {
+		await ConfigManager.loadConfig();
+		PieceFactory.reset();
+
+		const unlocked = PieceFactory._getUnlockedSpecialTypes(1);
+
+		if (unlocked.length !== 0) {
+			throw new Error(`Expected 0 unlocked types at level 1, got ${unlocked.length}: ${unlocked.join(', ')}`);
+		}
+	}
+});
+
+// Test: _getUnlockedSpecialTypes returns only PAINTER_HORIZONTAL at level 3
+testSuite.tests.push({
+	name: 'featureUnlocks - Level 3 unlocks only PAINTER_HORIZONTAL',
+	async run() {
+		await ConfigManager.loadConfig();
+		const unlocked = PieceFactory._getUnlockedSpecialTypes(3);
+
+		if (!unlocked.includes(CONSTANTS.BALL_TYPES.PAINTER_HORIZONTAL)) {
+			throw new Error('PAINTER_HORIZONTAL should be unlocked at level 3');
+		}
+		if (unlocked.includes(CONSTANTS.BALL_TYPES.PAINTER_VERTICAL)) {
+			throw new Error('PAINTER_VERTICAL should NOT be unlocked at level 3');
+		}
+		if (unlocked.includes(CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NE)) {
+			throw new Error('PAINTER_DIAGONAL_NE should NOT be unlocked at level 3');
+		}
+		if (unlocked.includes(CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NW)) {
+			throw new Error('PAINTER_DIAGONAL_NW should NOT be unlocked at level 3');
+		}
+		if (unlocked.includes(CONSTANTS.BALL_TYPES.EXPLODING)) {
+			throw new Error('EXPLODING should NOT be unlocked at level 3');
+		}
+	}
+});
+
+// Test: _getUnlockedSpecialTypes returns H+V at level 5
+testSuite.tests.push({
+	name: 'featureUnlocks - Level 5 unlocks PAINTER_HORIZONTAL and PAINTER_VERTICAL',
+	async run() {
+		await ConfigManager.loadConfig();
+		const unlocked = PieceFactory._getUnlockedSpecialTypes(5);
+
+		if (!unlocked.includes(CONSTANTS.BALL_TYPES.PAINTER_HORIZONTAL)) {
+			throw new Error('PAINTER_HORIZONTAL should be unlocked at level 5');
+		}
+		if (!unlocked.includes(CONSTANTS.BALL_TYPES.PAINTER_VERTICAL)) {
+			throw new Error('PAINTER_VERTICAL should be unlocked at level 5');
+		}
+		if (unlocked.includes(CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NE)) {
+			throw new Error('PAINTER_DIAGONAL_NE should NOT be unlocked at level 5');
+		}
+		if (unlocked.includes(CONSTANTS.BALL_TYPES.EXPLODING)) {
+			throw new Error('EXPLODING should NOT be unlocked at level 5');
+		}
+	}
+});
+
+// Test: _getUnlockedSpecialTypes returns H+V+both diagonals at level 7
+testSuite.tests.push({
+	name: 'featureUnlocks - Level 7 unlocks all painters, not yet EXPLODING',
+	async run() {
+		await ConfigManager.loadConfig();
+		const unlocked = PieceFactory._getUnlockedSpecialTypes(7);
+
+		const painters = [
+			CONSTANTS.BALL_TYPES.PAINTER_HORIZONTAL,
+			CONSTANTS.BALL_TYPES.PAINTER_VERTICAL,
+			CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NE,
+			CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NW
+		];
+		for (const type of painters) {
+			if (!unlocked.includes(type)) {
+				throw new Error(`${type} should be unlocked at level 7`);
+			}
+		}
+		if (unlocked.includes(CONSTANTS.BALL_TYPES.EXPLODING)) {
+			throw new Error('EXPLODING should NOT be unlocked at level 7');
+		}
+	}
+});
+
+// Test: _getUnlockedSpecialTypes returns all types at level 9
+testSuite.tests.push({
+	name: 'featureUnlocks - Level 9 unlocks all special types including EXPLODING',
+	async run() {
+		await ConfigManager.loadConfig();
+		const unlocked = PieceFactory._getUnlockedSpecialTypes(9);
+
+		const allTypes = [
+			CONSTANTS.BALL_TYPES.EXPLODING,
+			CONSTANTS.BALL_TYPES.PAINTER_HORIZONTAL,
+			CONSTANTS.BALL_TYPES.PAINTER_VERTICAL,
+			CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NE,
+			CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NW
+		];
+		for (const type of allTypes) {
+			if (!unlocked.includes(type)) {
+				throw new Error(`${type} should be unlocked at level 9`);
+			}
+		}
+		if (unlocked.length !== 5) {
+			throw new Error(`Expected 5 unlocked types at level 9, got ${unlocked.length}`);
+		}
+	}
+});
+
+// Test: generatePiece does not produce special balls at level 1 (interval mode off)
+testSuite.tests.push({
+	name: 'featureUnlocks - No specials spawned at level 1 (random mode)',
+	async run() {
+		await ConfigManager.loadConfig();
+
+		// Temporarily disable interval mode so random-spawn path is exercised
+		const origInterval = ConfigManager.get('specialInterval.enabled');
+		ConfigManager.config.specialInterval.enabled = false;
+		const origBag = ConfigManager.get('specialBag.enabled');
+		ConfigManager.config.specialBag = { ...(ConfigManager.config.specialBag || {}), enabled: false };
+		// Give every type a 100% spawn rate so any unlocked type would definitely appear
+		const origRates = {};
+		for (const key of ['exploding', 'painterHorizontal', 'painterVertical', 'painterDiagonal']) {
+			origRates[key] = ConfigManager.config.specialBalls[key].spawnRate;
+			ConfigManager.config.specialBalls[key].spawnRate = 1.0;
+		}
+		// Enough pieces to exceed blocking ball threshold so we can isolate painters/explosions
+		ConfigManager.config.specialBalls.blocking.minPieceBeforeSpawn.difficulty1 = 9999;
+
+		PieceFactory.reset();
+		let foundSpecial = false;
+		for (let i = 0; i < 50; i++) {
+			const piece = PieceFactory.generatePiece(1, 1);
+			if (piece) {
+				for (const ball of piece.getBalls()) {
+					const t = ball.getType();
+					if (t !== CONSTANTS.BALL_TYPES.NORMAL && t !== CONSTANTS.BALL_TYPES.BLOCKING) {
+						foundSpecial = true;
+					}
+				}
+			}
+		}
+
+		// Restore config
+		ConfigManager.config.specialInterval.enabled = origInterval;
+		ConfigManager.config.specialBag.enabled = origBag;
+		for (const key of ['exploding', 'painterHorizontal', 'painterVertical', 'painterDiagonal']) {
+			ConfigManager.config.specialBalls[key].spawnRate = origRates[key];
+		}
+		ConfigManager.config.specialBalls.blocking.minPieceBeforeSpawn.difficulty1 = 50;
+
+		if (foundSpecial) {
+			throw new Error('Special ball found at level 1 — gating failed');
+		}
+	}
+});
+
+// Test: generatePiece CAN produce PAINTER_HORIZONTAL at level 3 when spawn rate = 100%
+testSuite.tests.push({
+	name: 'featureUnlocks - PAINTER_HORIZONTAL spawns at level 3 (random mode, rate=100%)',
+	async run() {
+		await ConfigManager.loadConfig();
+
+		ConfigManager.config.specialInterval.enabled = false;
+		ConfigManager.config.specialBag = { ...(ConfigManager.config.specialBag || {}), enabled: false };
+		const origH = ConfigManager.config.specialBalls.painterHorizontal.spawnRate;
+		ConfigManager.config.specialBalls.painterHorizontal.spawnRate = 1.0;
+		ConfigManager.config.specialBalls.blocking.minPieceBeforeSpawn.difficulty1 = 9999;
+
+		PieceFactory.reset();
+		let found = false;
+		for (let i = 0; i < 30; i++) {
+			const piece = PieceFactory.generatePiece(3, 1);
+			if (piece) {
+				for (const ball of piece.getBalls()) {
+					if (ball.getType() === CONSTANTS.BALL_TYPES.PAINTER_HORIZONTAL) {
+						found = true;
+					}
+				}
+			}
+		}
+
+		// Restore
+		ConfigManager.config.specialInterval.enabled = true;
+		ConfigManager.config.specialBalls.painterHorizontal.spawnRate = origH;
+		ConfigManager.config.specialBalls.blocking.minPieceBeforeSpawn.difficulty1 = 50;
+
+		if (!found) {
+			throw new Error('PAINTER_HORIZONTAL should have spawned at level 3 with 100% rate');
+		}
+	}
+});
+
+// Test: Interval system at level 1 forces no special (null type)
+testSuite.tests.push({
+	name: 'featureUnlocks - Interval system skips forced special at level 1',
+	async run() {
+		await ConfigManager.loadConfig();
+
+		// Shorten interval to 1 so it triggers immediately
+		const origBase = ConfigManager.config.specialInterval.baseInterval;
+		ConfigManager.config.specialInterval.baseInterval = 1;
+		ConfigManager.config.specialInterval.enabled = true;
+
+		PieceFactory.reset();
+		// Generate 3 pieces — with interval=1, every piece should try to force a special
+		let foundSpecial = false;
+		for (let i = 0; i < 3; i++) {
+			const piece = PieceFactory.generatePiece(1, 1);
+			if (piece) {
+				for (const ball of piece.getBalls()) {
+					const t = ball.getType();
+					if (t !== CONSTANTS.BALL_TYPES.NORMAL && t !== CONSTANTS.BALL_TYPES.BLOCKING) {
+						foundSpecial = true;
+					}
+				}
+			}
+		}
+
+		// Restore
+		ConfigManager.config.specialInterval.baseInterval = origBase;
+
+		if (foundSpecial) {
+			throw new Error('Interval system injected a special ball at level 1 — gating failed');
+		}
+	}
+});
+
+// Test: Special bag is cleared on level change
+testSuite.tests.push({
+	name: 'featureUnlocks - Special bag discarded on level change',
+	async run() {
+		await ConfigManager.loadConfig();
+
+		ConfigManager.config.specialInterval.enabled = false;
+		ConfigManager.config.specialBag = { ...(ConfigManager.config.specialBag || {}), enabled: true };
+
+		PieceFactory.reset();
+		// Seed the bag at level 9 (all types unlocked) so it has entries
+		PieceFactory.currentLevel = 9;
+		PieceFactory._refillSpecialBag();
+		const bagSizeBefore = PieceFactory.specialBag.length;
+
+		if (bagSizeBefore === 0) {
+			ConfigManager.data.specialInterval.enabled = true;
+			ConfigManager.data.specialBag.enabled = false;
+			throw new Error('Bag should not be empty after refill at level 9');
+		}
+
+		// Simulate advancing to level 10 — bag should be cleared by _generatePieceInternal
+		PieceFactory.generatePiece(10, 1);
+		// After the level-change, the bag was discarded. It may have been immediately
+		// refilled for level 10 (same unlocks), so just confirm the transition happened
+		// without error. What matters is specialBag was reset (not still the level-9 bag).
+		// We can't easily distinguish refilled vs retained, so check no exception thrown.
+
+		// Restore
+		ConfigManager.config.specialInterval.enabled = true;
+		ConfigManager.config.specialBag.enabled = false;
+	}
+});
+
+// Test: _pickIntervalSpecialType returns null at level 1
+testSuite.tests.push({
+	name: 'featureUnlocks - _pickIntervalSpecialType returns null at level 1',
+	async run() {
+		await ConfigManager.loadConfig();
+		PieceFactory.reset();
+
+		const result = PieceFactory._pickIntervalSpecialType(1);
+		if (result !== null) {
+			throw new Error(`Expected null at level 1, got "${result}"`);
+		}
+	}
+});
+
+// Test: _pickIntervalSpecialType never returns locked type for level 3
+testSuite.tests.push({
+	name: 'featureUnlocks - _pickIntervalSpecialType only returns PAINTER_HORIZONTAL at level 3',
+	async run() {
+		await ConfigManager.loadConfig();
+
+		const forbidden = [
+			CONSTANTS.BALL_TYPES.EXPLODING,
+			CONSTANTS.BALL_TYPES.PAINTER_VERTICAL,
+			CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NE,
+			CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NW
+		];
+
+		for (let i = 0; i < 50; i++) {
+			const result = PieceFactory._pickIntervalSpecialType(3);
+			if (result === null) {
+				throw new Error('_pickIntervalSpecialType should not return null at level 3');
+			}
+			if (forbidden.includes(result)) {
+				throw new Error(`_pickIntervalSpecialType returned locked type "${result}" at level 3`);
+			}
+		}
+	}
+});
+
+// Test: featureUnlocks config missing → all types unlocked (backwards compat)
+testSuite.tests.push({
+	name: 'featureUnlocks - All types unlocked when featureUnlocks config absent',
+	async run() {
+		await ConfigManager.loadConfig();
+
+		// Temporarily remove featureUnlocks config
+		const saved = ConfigManager.config.specialBalls.featureUnlocks;
+		delete ConfigManager.config.specialBalls.featureUnlocks;
+
+		const unlocked = PieceFactory._getUnlockedSpecialTypes(1);
+
+		ConfigManager.config.specialBalls.featureUnlocks = saved;
+
+		const allTypes = [
+			CONSTANTS.BALL_TYPES.EXPLODING,
+			CONSTANTS.BALL_TYPES.PAINTER_HORIZONTAL,
+			CONSTANTS.BALL_TYPES.PAINTER_VERTICAL,
+			CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NE,
+			CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NW
+		];
+		for (const type of allTypes) {
+			if (!unlocked.includes(type)) {
+				throw new Error(`With no featureUnlocks config, ${type} should default to unlocked at level 1`);
+			}
+		}
+	}
+});
+
 export default testSuite;

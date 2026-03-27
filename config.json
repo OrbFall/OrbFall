@@ -42,6 +42,13 @@
 		"level19": ["red", "green", "blue", "yellow", "magenta", "cyan", "orange", "purple"]
 	},
 	"specialBalls": {
+		"featureUnlocks": {
+			"PAINTER_HORIZONTAL": 3,
+			"PAINTER_VERTICAL": 5,
+			"PAINTER_DIAGONAL_NE": 7,
+			"PAINTER_DIAGONAL_NW": 7,
+			"EXPLODING": 9
+		},
 		"exploding": {
 			"spawnRate": 0.05,
 			"explosionRadius": 3

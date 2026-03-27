@@ -3,6 +3,13 @@
         "/^powershell -Command \"\\(Get-Content 'c:\\\\Users\\\\stoml\\\\OneDrive\\\\Desktop\\\\coding\\.worktrees\\\\copilot-worktree-2026-02-20T02-26-49\\\\src\\\\styles\\\\main\\.css'\\)\\.Count\"$/": {
             "approve": true,
             "matchCommandLine": true
+        },
+        "Get-Command": true,
+        "npx playwright": true,
+        "npx --yes playwright": true,
+        "/^python -m http\\.server 8765 2>&1 &$/": {
+            "approve": true,
+            "matchCommandLine": true
         }
     }
 }

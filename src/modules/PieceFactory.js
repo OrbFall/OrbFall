@@ -80,6 +80,34 @@ class PieceFactoryClass {
 	}
 	
 	/**
+	 * Get the special ball types that are unlocked at a given level.
+	 * Reads the `specialBalls.featureUnlocks` map from config; if absent, all types
+	 * are considered unlocked (backwards-compatible default).
+	 * @param {Number} level - Current game level
+	 * @returns {Array<String>} Array of BALL_TYPES constants available at this level
+	 * @private
+	 */
+	_getUnlockedSpecialTypes(level) {
+		const unlocks = ConfigManager.get('specialBalls.featureUnlocks', null);
+		const allTypes = [
+			CONSTANTS.BALL_TYPES.EXPLODING,
+			CONSTANTS.BALL_TYPES.PAINTER_HORIZONTAL,
+			CONSTANTS.BALL_TYPES.PAINTER_VERTICAL,
+			CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NE,
+			CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NW
+		];
+
+		if (!unlocks) {
+			return allTypes;
+		}
+
+		return allTypes.filter(type => {
+			const minLevel = unlocks[type];
+			return minLevel === undefined || level >= minLevel;
+		});
+	}
+
+	/**
 	 * Check if a special ball should spawn
 	 * @param {String} specialType - Type of special ball (exploding, painterHorizontal, etc.)
 	 * @returns {Boolean} True if special ball should spawn
@@ -129,17 +157,24 @@ class PieceFactoryClass {
 	 * @returns {Ball} A special ball or null if none should spawn
 	 */
 	generateSpecialBall(difficulty) {
+		const level = this.currentLevel || 1;
 		// Get available colors for random selection
-		const availableColors = this.getAvailableColors(this.currentLevel || 1);
+		const availableColors = this.getAvailableColors(level);
 		const intervalEnabled = ConfigManager.get('specialInterval.enabled', false);
 		const specialBagEnabled = ConfigManager.get('specialBag.enabled', false);
-		
-		// Check blocking ball first (difficulty-dependent)
+
+		// Check blocking ball first (difficulty-dependent, not level-gated)
 		if (this.shouldSpawnBlockingBall(difficulty)) {
 			const color = ConfigManager.get('colors.special.blocking', '#808080');
 			return new Ball(CONSTANTS.BALL_TYPES.BLOCKING, color);
 		}
-		
+
+		// Early exit if no special types are unlocked at the current level
+		const unlockedTypes = this._getUnlockedSpecialTypes(level);
+		if (unlockedTypes.length === 0) {
+			return null;
+		}
+
 		// Use special bag if enabled and interval mode is off
 		if (specialBagEnabled && !intervalEnabled) {
 			const shouldSpawn = this._shouldSpawnAnySpecialBall();
@@ -147,19 +182,20 @@ class PieceFactoryClass {
 				return null;
 			}
 			const specialType = this._drawFromSpecialBag();
+			if (!specialType) return null; // bag empty (no types unlocked at this level)
 			const color = availableColors[randomInt(0, availableColors.length - 1)];
 			return new Ball(specialType, color);
 		}
-		
-		// Check other special types
+
+		// Check other special types — filtered by level unlocks
 		const specialTypes = [
 			{ type: CONSTANTS.BALL_TYPES.EXPLODING, config: 'exploding' },
 			{ type: CONSTANTS.BALL_TYPES.PAINTER_HORIZONTAL, config: 'painterHorizontal' },
 			{ type: CONSTANTS.BALL_TYPES.PAINTER_VERTICAL, config: 'painterVertical' },
 			{ type: CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NE, config: 'painterDiagonal' },
 			{ type: CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NW, config: 'painterDiagonal' }
-		];
-		
+		].filter(s => unlockedTypes.includes(s.type));
+
 		// Shuffle to randomize priority
 		for (let i = specialTypes.length - 1; i > 0; i--) {
 			const j = randomInt(0, i);
@@ -216,15 +252,16 @@ class PieceFactoryClass {
 	}
 	
 	/**
-	 * Draw the next special type from the bag, refilling when empty
-	 * @returns {String} Ball type
+	 * Draw the next special type from the bag, refilling when empty.
+	 * Returns null if the bag is still empty after refill (e.g. no types unlocked).
+	 * @returns {String|null} Ball type constant, or null
 	 * @private
 	 */
 	_drawFromSpecialBag() {
 		if (this.specialBag.length === 0) {
 			this._refillSpecialBag();
 		}
-		return this.specialBag.pop();
+		return this.specialBag.pop() ?? null;
 	}
 	
 	/**
@@ -242,12 +279,13 @@ class PieceFactoryClass {
 	}
 	
 	/**
-	 * Build weighted special bag pool
+	 * Build weighted special bag pool, filtered by level-based feature unlocks.
 	 * @returns {Array<String>} Ball type constants
 	 * @private
 	 */
 	_getSpecialBagPool() {
 		const weights = ConfigManager.get('specialBag.weights', {});
+		const unlockedTypes = this._getUnlockedSpecialTypes(this.currentLevel || 1);
 		const entries = [
 			{ key: 'exploding', type: CONSTANTS.BALL_TYPES.EXPLODING },
 			{ key: 'painterHorizontal', type: CONSTANTS.BALL_TYPES.PAINTER_HORIZONTAL },
@@ -257,14 +295,13 @@ class PieceFactoryClass {
 		];
 		const pool = [];
 		for (const entry of entries) {
+			if (!unlockedTypes.includes(entry.type)) continue;
 			const weight = Math.max(0, Math.floor(weights[entry.key] ?? 1));
 			for (let i = 0; i < weight; i++) {
 				pool.push(entry.type);
 			}
 		}
-		if (pool.length === 0) {
-			pool.push(CONSTANTS.BALL_TYPES.EXPLODING);
-		}
+		// pool may be empty if nothing is unlocked yet — caller must handle null draw
 		return pool;
 	}
 	
@@ -305,9 +342,15 @@ class PieceFactoryClass {
 	 * @private
 	 */
 	_generatePieceInternal(level, difficulty, debugShape = null, debugBallConfigs = null) {
-		// Store current level for color selection
+		// Store current level for color selection.
+		// If the level changed, discard the special bag so it is rebuilt with
+		// any newly-unlocked types at the start of the new level.
+		const prevLevel = this.currentLevel;
 		this.currentLevel = level;
 		this.currentDifficulty = difficulty;
+		if (prevLevel !== level) {
+			this.specialBag = [];
+		}
 		
 		// Increment pieces dropped counter
 		this.piecesDropped++;
@@ -537,16 +580,20 @@ class PieceFactoryClass {
 		
 		const shouldReveal = this.specialPiecesUntilNext > 0 && this.specialPiecesUntilNext <= revealWindow;
 		if (shouldReveal && !this.nextIntervalSpecialType) {
-			this.nextIntervalSpecialType = this._pickIntervalSpecialType();
-			this.nextIntervalSpecialColor = this._pickIntervalSpecialColor(level, this.nextIntervalSpecialType);
+			this.nextIntervalSpecialType = this._pickIntervalSpecialType(level);
+			if (this.nextIntervalSpecialType) {
+				this.nextIntervalSpecialColor = this._pickIntervalSpecialColor(level, this.nextIntervalSpecialType);
+			}
 		}
-		
+
 		const forceSpecial = this.specialPiecesUntilNext <= 0;
 		let forcedType = null;
 		let forcedColor = null;
 		if (forceSpecial) {
-			forcedType = this.nextIntervalSpecialType || this._pickIntervalSpecialType();
-			forcedColor = this.nextIntervalSpecialColor || this._pickIntervalSpecialColor(level, forcedType);
+			forcedType = this.nextIntervalSpecialType || this._pickIntervalSpecialType(level);
+			if (forcedType) {
+				forcedColor = this.nextIntervalSpecialColor || this._pickIntervalSpecialColor(level, forcedType);
+			}
 		}
 		
 		return {
@@ -587,12 +634,14 @@ class PieceFactoryClass {
 	}
 	
 	/**
-	 * Choose a special type for interval-based spawning
-	 * @returns {String} Ball type constant
+	 * Choose a special type for interval-based spawning, respecting level-based
+	 * feature unlock gates.  Returns null if no types are unlocked yet.
+	 * @param {Number} level - Current game level
+	 * @returns {String|null} Ball type constant, or null
 	 * @private
 	 */
-	_pickIntervalSpecialType() {
-		const allowed = ConfigManager.get('specialInterval.allowedTypes', []);
+	_pickIntervalSpecialType(level) {
+		const configured = ConfigManager.get('specialInterval.allowedTypes', []);
 		const fallback = [
 			CONSTANTS.BALL_TYPES.EXPLODING,
 			CONSTANTS.BALL_TYPES.PAINTER_HORIZONTAL,
@@ -600,11 +649,19 @@ class PieceFactoryClass {
 			CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NE,
 			CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NW
 		];
-		
-		const mapped = allowed
+
+		const mapped = configured
 			.map(type => CONSTANTS.BALL_TYPES[type])
 			.filter(type => type);
-		const pool = mapped.length > 0 ? mapped : fallback;
+		const candidates = mapped.length > 0 ? mapped : fallback;
+
+		// Apply level-based feature unlock gates
+		const unlocked = this._getUnlockedSpecialTypes(level);
+		const pool = candidates.filter(type => unlocked.includes(type));
+
+		if (pool.length === 0) {
+			return null; // nothing unlocked at this level yet
+		}
 		return pool[randomInt(0, pool.length - 1)];
 	}
 	

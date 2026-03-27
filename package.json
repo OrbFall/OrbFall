@@ -1,0 +1,14 @@
+{
+	"name": "orbfall-chromacrush",
+	"version": "1.0.4",
+	"description": "Orb•Fall: ChromaCrush — color-matching puzzle game (PWA)",
+	"private": true,
+	"scripts": {
+		"test": "node tests/run-tests.js",
+		"serve": "python -m http.server 8765",
+		"setup": "npm install"
+	},
+	"devDependencies": {
+		"playwright": "^1.58.2"
+	}
+}
