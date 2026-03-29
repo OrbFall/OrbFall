@@ -120,6 +120,23 @@ class Grid {
 	}
 	
 	/**
+	 * Count the number of blocking balls on the grid
+	 * @returns {Number} Count of blocking balls
+	 */
+	countBlockingBalls() {
+		let count = 0;
+		for (let row = 0; row < this.rows; row++) {
+			for (let col = 0; col < this.cols; col++) {
+				const ball = this.grid[row][col];
+				if (ball && ball.getType() === CONSTANTS.BALL_TYPES.BLOCKING) {
+					count++;
+				}
+			}
+		}
+		return count;
+	}
+	
+	/**
 	 * Check if piece can be placed at given position without collision
 	 * @param {Piece} piece - Piece to check
 	 * @param {Number} [x] - Column position (defaults to piece.position.x)
@@ -458,88 +475,91 @@ class Grid {
 	}
 	
 	/**
-	 * Apply gravity - drop floating balls down only in columns with removed balls
-	 * @param {Array<{row: Number, col: Number}>} removedPositions - Optional positions that were removed
+	 * Perform a single gravity pass - find anchored balls and drop floating ones by one row.
+	 * @returns {Boolean} True if any balls moved this pass
+	 */
+	applyGravityStep() {
+		let ballsMoved = false;
+		
+		// Step 1: Find all balls connected to the bottom (anchored balls)
+		const anchored = new Set();
+		
+		// Start flood fill from bottom row
+		const queue = [];
+		for (let col = 0; col < this.cols; col++) {
+			if (this.grid[this.rows - 1][col] !== null) {
+				queue.push({ row: this.rows - 1, col });
+				anchored.add(`${this.rows - 1},${col}`);
+			}
+		}
+		
+		// Flood fill to find all connected balls (orthogonal only)
+		while (queue.length > 0) {
+			const { row, col } = queue.shift();
+			
+			// Check 4 orthogonal directions (horizontal, vertical)
+			const directions = [
+				[-1, 0],  // up
+				[1, 0],   // down
+				[0, -1],  // left
+				[0, 1]    // right
+			];
+			
+			for (const [dr, dc] of directions) {
+				const newRow = row + dr;
+				const newCol = col + dc;
+				const key = `${newRow},${newCol}`;
+				
+				if (newRow >= 0 && newRow < this.rows && newCol >= 0 && newCol < this.cols) {
+					if (this.grid[newRow][newCol] !== null && !anchored.has(key)) {
+						anchored.add(key);
+						queue.push({ row: newRow, col: newCol });
+					}
+				}
+			}
+		}
+		
+		// Step 2: Drop all floating (unanchored) balls one row down
+		// Scan from bottom to top to avoid moving same ball twice
+		for (let row = this.rows - 2; row >= 0; row--) {
+			for (let col = 0; col < this.cols; col++) {
+				const key = `${row},${col}`;
+				const ball = this.grid[row][col];
+				
+				// If there's a ball and it's not anchored and space below is empty
+				if (ball !== null && !anchored.has(key) && this.grid[row + 1][col] === null) {
+					// Move it down one row
+					this.grid[row + 1][col] = ball;
+					this.grid[row][col] = null;
+					ballsMoved = true;
+				}
+			}
+		}
+		
+		return ballsMoved;
+	}
+
+	/**
+	 * Apply gravity - repeatedly drop floating balls until the grid is stable
+	 * @param {Array<{row: Number, col: Number}>} removedPositions - Optional (unused, kept for API compat)
 	 * @returns {Boolean} True if any balls moved, false if grid is stable
 	 */
 	applyGravity(removedPositions = null) {
-		let ballsMoved = false;
-		
-		// Repeat gravity until nothing moves (handles floating islands falling and reconnecting)
-		let keepGoing = true;
+		let anyMoved = false;
 		let iterations = 0;
 		const maxIterations = 50;
 		
-		while (keepGoing && iterations < maxIterations) {
+		while (iterations < maxIterations) {
 			iterations++;
-			keepGoing = false;
-			
-			// Step 1: Find all balls connected to the bottom (anchored balls)
-			const anchored = new Set();
-			
-			// Start flood fill from bottom row
-			const queue = [];
-			for (let col = 0; col < this.cols; col++) {
-				if (this.grid[this.rows - 1][col] !== null) {
-					queue.push({ row: this.rows - 1, col });
-					anchored.add(`${this.rows - 1},${col}`);
-				}
-			}
-			
-			// Flood fill to find all connected balls (including diagonals)
-			while (queue.length > 0) {
-				const { row, col } = queue.shift();
-				
-				// Check all 8 directions (horizontal, vertical, diagonal)
-				const directions = [
-					[-1, 0],  // up
-					[1, 0],   // down
-					[0, -1],  // left
-					[0, 1],   // right
-					[-1, -1], // up-left
-					[-1, 1],  // up-right
-					[1, -1],  // down-left
-					[1, 1]    // down-right
-				];
-				
-				for (const [dr, dc] of directions) {
-					const newRow = row + dr;
-					const newCol = col + dc;
-					const key = `${newRow},${newCol}`;
-					
-					if (newRow >= 0 && newRow < this.rows && newCol >= 0 && newCol < this.cols) {
-						if (this.grid[newRow][newCol] !== null && !anchored.has(key)) {
-							anchored.add(key);
-							queue.push({ row: newRow, col: newCol });
-						}
-					}
-				}
-			}
-			
-			// Step 2: Drop all floating (unanchored) balls one row down
-			// Scan from bottom to top to avoid moving same ball twice
-			for (let row = this.rows - 2; row >= 0; row--) {
-				for (let col = 0; col < this.cols; col++) {
-					const key = `${row},${col}`;
-					const ball = this.grid[row][col];
-					
-					// If there's a ball and it's not anchored and space below is empty
-					if (ball !== null && !anchored.has(key) && this.grid[row + 1][col] === null) {
-						// Move it down one row
-						this.grid[row + 1][col] = ball;
-						this.grid[row][col] = null;
-						ballsMoved = true;
-						keepGoing = true; // Need another iteration
-					}
-				}
-			}
+			if (!this.applyGravityStep()) break;
+			anyMoved = true;
 		}
 		
 		if (iterations >= maxIterations) {
 			console.warn('applyGravity: Max iterations reached');
 		}
 		
-		return ballsMoved;
+		return anyMoved;
 	}
 	
 	/**

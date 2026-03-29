@@ -184,14 +184,24 @@ Your final score is multiplied by your difficulty setting:
 
 **Final Score Formula:**
 ```
-Score = (Total cascade points) × Difficulty multiplier
+Score = (Total cascade points + streak bonus) × Difficulty multiplier
 ```
+
+### Match Streak Bonus
+Land consecutive pieces that each produce at least one match to build a **Match Streak**:
+- **Streak 1:** No bonus (first match)
+- **Streak 2+:** Bonus = `min(streak, 10) × 2` points (before difficulty multiplier)
+- **Streak Cap:** 10 (max bonus = 20 points per piece at cap)
+- **Reset:** Missing a match (piece locks with no clears) resets streak to 0
+
+The streak counter appears in the HUD when you reach 2+, and green floating text ("3x STREAK!", etc.) appears at 3+.
 
 ### Visual Feedback
 The game shows different colored floating text:
 - **White numbers:** Normal match ball counts
 - **Gold numbers:** Explosion ball counts
 - **Blue text:** Cascade bonuses ("2x CASCADE!", "3x CASCADE!", etc.)
+- **Green text:** Match streak milestones ("3x STREAK!", "4x STREAK!", etc.)
 
 ---
 
@@ -250,10 +260,11 @@ Each difficulty affects:
 
 ### High Score Strategies
 1. **Focus on Cascades:** A single 5x cascade scores more than many 1x clears
-2. **Play Higher Difficulties:** The multiplier dramatically increases scores
-3. **Delay Clearing:** Sometimes waiting to create bigger cascades is worth it
-4. **Special Ball Synergy:** Combine painters and explosions for mega-clears
-5. **Survive Longer:** More time = more opportunities for high-scoring cascades
+2. **Maintain Streaks:** Consecutive matches earn growing bonus points — place every piece to create at least one match
+3. **Play Higher Difficulties:** The multiplier dramatically increases scores
+4. **Delay Clearing:** Sometimes waiting to create bigger cascades is worth it
+5. **Special Ball Synergy:** Combine painters and explosions for mega-clears
+6. **Survive Longer:** More time = more opportunities for high-scoring cascades
 
 ---
 

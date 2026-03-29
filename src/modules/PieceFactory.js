@@ -37,6 +37,10 @@ class PieceFactoryClass {
 		this.shapeBag = [];
 		// Special bag tracking
 		this.specialBag = [];
+		// Pity timer: pieces since last explosive ball
+		this.piecesSinceLastExplosive = 0;
+		// Blocker failsafe: force explosive on next interval
+		this.forceExplosiveNext = false;
 	}
 	
 	/**
@@ -51,6 +55,8 @@ class PieceFactoryClass {
 		this.nextIntervalSpecialColor = null;
 		this.shapeBag = [];
 		this.specialBag = [];
+		this.piecesSinceLastExplosive = 0;
+		this.forceExplosiveNext = false;
 	}
 	
 	/**
@@ -356,9 +362,16 @@ class PieceFactoryClass {
 		this.piecesDropped++;
 		
 		const intervalResult = this._tickSpecialInterval(level, difficulty);
-		const forceIntervalSpecial = intervalResult.forceSpecial;
-		const forcedSpecialType = intervalResult.forcedType;
-		const forcedSpecialColor = intervalResult.forcedColor;
+		let forceIntervalSpecial = intervalResult.forceSpecial;
+		let forcedSpecialType = intervalResult.forcedType;
+		let forcedSpecialColor = intervalResult.forcedColor;
+		
+		// Pity timer: if too many pieces without an explosive, force one
+		if (this._checkPityTimer(level)) {
+			forceIntervalSpecial = true;
+			forcedSpecialType = CONSTANTS.BALL_TYPES.EXPLODING;
+			forcedSpecialColor = ConfigManager.get('colors.special.exploding', '#FFD700');
+		}
 		
 		// Choose piece shape (allow debug override)
 		let shapeType;
@@ -501,6 +514,14 @@ class PieceFactoryClass {
 			this._resetIntervalAfterForce(level, difficulty);
 		}
 		
+		// Update pity timer: reset if piece contains explosive, otherwise increment
+		const hasExplosive = balls.some(b => b.getType() === CONSTANTS.BALL_TYPES.EXPLODING);
+		if (hasExplosive) {
+			this.piecesSinceLastExplosive = 0;
+		} else {
+			this.piecesSinceLastExplosive++;
+		}
+		
 		return new Piece(shapeType, balls);
 	}
 	
@@ -619,6 +640,27 @@ class PieceFactoryClass {
 	}
 	
 	/**
+	 * Check if the pity timer should force an explosive ball
+	 * @param {Number} level - Current game level
+	 * @returns {Boolean} True if pity timer threshold exceeded and EXPLODING is unlocked
+	 * @private
+	 */
+	_checkPityTimer(level) {
+		const enabled = ConfigManager.get('pityTimer.enabled', false);
+		if (!enabled) return false;
+		
+		const threshold = ConfigManager.get(
+			`pityTimer.thresholds.difficulty${this.currentDifficulty}`,
+			20
+		);
+		if (this.piecesSinceLastExplosive < threshold) return false;
+		
+		// Only fire if EXPLODING is unlocked at this level
+		const unlocked = this._getUnlockedSpecialTypes(level);
+		return unlocked.includes(CONSTANTS.BALL_TYPES.EXPLODING);
+	}
+	
+	/**
 	 * Get interval length based on level and difficulty
 	 * @param {Number} level - Current level
 	 * @param {Number} difficulty - Current difficulty
@@ -641,6 +683,15 @@ class PieceFactoryClass {
 	 * @private
 	 */
 	_pickIntervalSpecialType(level) {
+		// Blocker failsafe override: force explosive if flagged
+		if (this.forceExplosiveNext) {
+			const unlocked = this._getUnlockedSpecialTypes(level);
+			if (unlocked.includes(CONSTANTS.BALL_TYPES.EXPLODING)) {
+				this.forceExplosiveNext = false;
+				return CONSTANTS.BALL_TYPES.EXPLODING;
+			}
+		}
+		
 		const configured = ConfigManager.get('specialInterval.allowedTypes', []);
 		const fallback = [
 			CONSTANTS.BALL_TYPES.EXPLODING,

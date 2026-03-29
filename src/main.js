@@ -302,6 +302,8 @@ function setupGameScreenListeners() {
 function setupScoreListener() {
 	const currentScoreDisplay = document.getElementById('currentScoreDisplay');
 	const bestScoreDisplay = document.getElementById('bestScoreDisplay');
+	const streakDisplay = document.getElementById('streakDisplay');
+	const streakValue = document.getElementById('streakValue');
 	
 	EventEmitter.on(CONSTANTS.EVENTS.SCORE_UPDATE, (data) => {
 		if (currentScoreDisplay) {
@@ -309,6 +311,15 @@ function setupScoreListener() {
 		}
 		if (bestScoreDisplay && data.bestScore !== undefined) {
 			bestScoreDisplay.textContent = data.bestScore.toLocaleString();
+		}
+		// Update streak display
+		if (streakDisplay && streakValue && data.matchStreak !== undefined) {
+			if (data.matchStreak >= 2) {
+				streakDisplay.style.display = '';
+				streakValue.textContent = `${data.matchStreak}x`;
+			} else {
+				streakDisplay.style.display = 'none';
+			}
 		}
 	});
 }

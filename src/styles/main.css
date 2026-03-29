@@ -321,6 +321,41 @@ body::after {
 	justify-content: center;
 }
 
+#menuScreen {
+	position: relative;
+	padding-top: 3.25rem;
+}
+
+.menu-report-bugs-pill {
+	position: absolute;
+	top: 0.85rem;
+	left: 50%;
+	transform: translateX(-50%);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0.35rem 0.9rem;
+	border-radius: 999px;
+	border: 1px solid rgba(0, 255, 136, 0.55);
+	background: rgba(10, 36, 30, 0.72);
+	backdrop-filter: blur(6px);
+	color: #c7ffe6;
+	font-size: 0.75rem;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	text-decoration: none;
+	box-shadow: 0 0 14px rgba(0, 255, 136, 0.2);
+	transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+	z-index: 5;
+}
+
+.menu-report-bugs-pill:hover {
+	transform: translateX(-50%) translateY(-1px);
+	border-color: rgba(0, 255, 136, 0.9);
+	box-shadow: 0 0 18px rgba(0, 255, 136, 0.32);
+}
+
 /* ============================================
    Menu Screen
    ============================================ */
@@ -791,6 +826,10 @@ body::after {
 	font-size: 1.25rem;
 	font-weight: bold;
 	color: #ffffff;
+}
+
+.streak-value {
+	color: #00ff88;
 }
 
 .hud-input {
@@ -1541,6 +1580,16 @@ body::after {
    Responsive Design
    ============================================ */
 @media (max-width: 768px) {
+	#menuScreen {
+		padding-top: 3rem;
+	}
+
+	.menu-report-bugs-pill {
+		top: 0.7rem;
+		font-size: 0.68rem;
+		padding: 0.3rem 0.75rem;
+	}
+
 	.menu-container {
 		padding: 0.5rem;
 	}

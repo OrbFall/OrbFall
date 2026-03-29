@@ -1092,6 +1092,36 @@ export function testGrid() {
 			pass: forEachCount === 12,
 			error: null
 		});
+
+		// ── countBlockingBalls ──
+
+		const blockerGrid = new Grid(10, 10);
+		tests.push({
+			name: 'Grid - countBlockingBalls returns 0 on empty grid',
+			pass: blockerGrid.countBlockingBalls() === 0,
+			error: null
+		});
+
+		// Add some blocking balls
+		blockerGrid.setBallAt(0, 0, new Ball(BALL_TYPES.BLOCKING, '#808080'));
+		blockerGrid.setBallAt(3, 5, new Ball(BALL_TYPES.BLOCKING, '#808080'));
+		blockerGrid.setBallAt(9, 9, new Ball(BALL_TYPES.BLOCKING, '#808080'));
+		// Add a normal ball (should not count)
+		blockerGrid.setBallAt(1, 1, new Ball(BALL_TYPES.NORMAL, '#FF0000'));
+		
+		tests.push({
+			name: 'Grid - countBlockingBalls counts only blocking balls',
+			pass: blockerGrid.countBlockingBalls() === 3,
+			error: null
+		});
+
+		// Remove one blocking ball
+		blockerGrid.removeBallAt(3, 5);
+		tests.push({
+			name: 'Grid - countBlockingBalls updates after removal',
+			pass: blockerGrid.countBlockingBalls() === 2,
+			error: null
+		});
 	}
 	catch (error) {
 		tests.push({

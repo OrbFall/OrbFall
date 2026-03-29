@@ -269,7 +269,8 @@ testSuite.tests.push({
 		EventEmitter.emit(CONSTANTS.EVENTS.CASCADE_COMPLETE, { cascadeCount: 1 });
 		
 		const finalScore = ScoreManager.getScore();
-		const expectedFinal = 7; // 3 + 4
+		// 3 + 4 base, plus streak bonus: min(2,10)*2*1.0 = 4
+		const expectedFinal = 11; // 3 + 4 + 4
 		
 		if (finalScore !== expectedFinal) {
 			throw new Error(`Expected final score ${expectedFinal}, got ${finalScore}`);
@@ -296,9 +297,9 @@ testSuite.tests.push({
 		
 		const finalScore = ScoreManager.getScore();
 		// First cascade: L1(3×1) + L2(3×2) + bonus(3) = 12
-		// Second cascade: L1(5×1) no bonus = 5
-		// Total = 17
-		const expectedScore = 17;
+		// Second cascade: L1(5×1) = 5 + streak bonus(min(2,10)*2=4)
+		// Total = 21
+		const expectedScore = 21;
 		
 		if (finalScore !== expectedScore) {
 			throw new Error(`Expected score ${expectedScore}, got ${finalScore}`);
@@ -325,9 +326,9 @@ testSuite.tests.push({
 		
 		const finalScore = ScoreManager.getScore();
 		// First cascade: L1(3×1) + L2(3×2) + bonus(3) = 12
-		// Second cascade: L1(5×1) no bonus = 5
-		// Total = 17
-		const expectedScore = 17;
+		// Second cascade: L1(5×1) = 5 + streak bonus(min(2,10)*2=4)
+		// Total = 21
+		const expectedScore = 21;
 		
 		if (finalScore !== expectedScore) {
 			throw new Error(`Expected score ${expectedScore}, got ${finalScore}`);
@@ -573,14 +574,224 @@ testSuite.tests.push({
 		EventEmitter.emit(CONSTANTS.EVENTS.BALLS_CLEARED, { count: 2, matches: 1 });
 		EventEmitter.emit(CONSTANTS.EVENTS.CASCADE_COMPLETE, { cascadeCount: 2 });
 		
-		const scoreAfter2 = ScoreManager.getScore(); // 5 + (L1: 2×1 + L2: 2×2 + bonus: 3) = 5 + 9 = 14
+		const scoreAfter2 = ScoreManager.getScore(); // 5 + (L1: 2×1 + L2: 2×2 + bonus: 3) = 5 + 9 = 14, plus streak bonus min(2,10)*2 = 4 → 18
 		
 		if (scoreAfter1 !== 5) {
 			throw new Error(`Expected 5 after first cascade, got ${scoreAfter1}`);
 		}
 		
-		if (scoreAfter2 !== 14) {
-			throw new Error(`Expected 14 total, got ${scoreAfter2}`);
+		if (scoreAfter2 !== 18) {
+			throw new Error(`Expected 18 total, got ${scoreAfter2}`);
+		}
+	}
+});
+
+// ============================================
+// Match Streak Tests
+// ============================================
+
+// Test: Streak starts at 0 after initialize
+testSuite.tests.push({
+	name: 'Streak - Starts at 0 after initialize',
+	async run() {
+		await ConfigManager.loadConfig();
+		ScoreManager.initialize(1);
+		
+		if (ScoreManager.matchStreak !== 0) {
+			throw new Error(`Expected streak 0, got ${ScoreManager.matchStreak}`);
+		}
+	}
+});
+
+// Test: Streak increments on cascade complete
+testSuite.tests.push({
+	name: 'Streak - Increments on each cascade complete',
+	async run() {
+		await ConfigManager.loadConfig();
+		ScoreManager.initialize(1);
+		
+		// First cascade
+		EventEmitter.emit(CONSTANTS.EVENTS.BALLS_CLEARED, { count: 3, matches: 1 });
+		EventEmitter.emit(CONSTANTS.EVENTS.CASCADE_COMPLETE, { cascadeCount: 1 });
+		
+		if (ScoreManager.matchStreak !== 1) {
+			throw new Error(`Expected streak 1 after first cascade, got ${ScoreManager.matchStreak}`);
+		}
+		
+		// Second cascade
+		EventEmitter.emit(CONSTANTS.EVENTS.BALLS_CLEARED, { count: 3, matches: 1 });
+		EventEmitter.emit(CONSTANTS.EVENTS.CASCADE_COMPLETE, { cascadeCount: 1 });
+		
+		if (ScoreManager.matchStreak !== 2) {
+			throw new Error(`Expected streak 2 after second cascade, got ${ScoreManager.matchStreak}`);
+		}
+	}
+});
+
+// Test: Streak resets on onNoMatch
+testSuite.tests.push({
+	name: 'Streak - Resets to 0 on onNoMatch',
+	async run() {
+		await ConfigManager.loadConfig();
+		ScoreManager.initialize(1);
+		
+		// Build up streak
+		EventEmitter.emit(CONSTANTS.EVENTS.BALLS_CLEARED, { count: 3, matches: 1 });
+		EventEmitter.emit(CONSTANTS.EVENTS.CASCADE_COMPLETE, { cascadeCount: 1 });
+		EventEmitter.emit(CONSTANTS.EVENTS.BALLS_CLEARED, { count: 3, matches: 1 });
+		EventEmitter.emit(CONSTANTS.EVENTS.CASCADE_COMPLETE, { cascadeCount: 1 });
+		
+		if (ScoreManager.matchStreak !== 2) {
+			throw new Error(`Expected streak 2, got ${ScoreManager.matchStreak}`);
+		}
+		
+		ScoreManager.onNoMatch();
+		
+		if (ScoreManager.matchStreak !== 0) {
+			throw new Error(`Expected streak 0 after onNoMatch, got ${ScoreManager.matchStreak}`);
+		}
+	}
+});
+
+// Test: Streak bonus not applied at streak=1
+testSuite.tests.push({
+	name: 'Streak - No bonus at streak 1',
+	async run() {
+		await ConfigManager.loadConfig();
+		ScoreManager.initialize(1);
+		
+		EventEmitter.emit(CONSTANTS.EVENTS.BALLS_CLEARED, { count: 5, matches: 1 });
+		EventEmitter.emit(CONSTANTS.EVENTS.CASCADE_COMPLETE, { cascadeCount: 1 });
+		
+		// 5 balls × 1pt × 1.0 diff = 5, streak=1 no bonus
+		if (ScoreManager.getScore() !== 5) {
+			throw new Error(`Expected 5 (no streak bonus), got ${ScoreManager.getScore()}`);
+		}
+	}
+});
+
+// Test: Streak bonus applied at streak=2+
+testSuite.tests.push({
+	name: 'Streak - Bonus applied at streak 2+',
+	async run() {
+		await ConfigManager.loadConfig();
+		ScoreManager.initialize(1);
+		
+		// First cascade: 5 points, streak=1
+		EventEmitter.emit(CONSTANTS.EVENTS.BALLS_CLEARED, { count: 5, matches: 1 });
+		EventEmitter.emit(CONSTANTS.EVENTS.CASCADE_COMPLETE, { cascadeCount: 1 });
+		
+		// Second cascade: 5 points + streak bonus min(2,10)*2 = 4
+		EventEmitter.emit(CONSTANTS.EVENTS.BALLS_CLEARED, { count: 5, matches: 1 });
+		EventEmitter.emit(CONSTANTS.EVENTS.CASCADE_COMPLETE, { cascadeCount: 1 });
+		
+		// Total: 5 + 5 + 4 = 14
+		if (ScoreManager.getScore() !== 14) {
+			throw new Error(`Expected 14 (5+5+4 streak), got ${ScoreManager.getScore()}`);
+		}
+	}
+});
+
+// Test: Streak bonus is capped
+testSuite.tests.push({
+	name: 'Streak - Bonus capped at streakCap',
+	async run() {
+		await ConfigManager.loadConfig();
+		ScoreManager.initialize(1);
+		
+		// Build streak to 12 (beyond cap of 10)
+		let expectedScore = 0;
+		for (let i = 1; i <= 12; i++) {
+			EventEmitter.emit(CONSTANTS.EVENTS.BALLS_CLEARED, { count: 1, matches: 1 });
+			EventEmitter.emit(CONSTANTS.EVENTS.CASCADE_COMPLETE, { cascadeCount: 1 });
+			expectedScore += 1; // base 1 point each
+			if (i > 1) {
+				expectedScore += Math.floor(Math.min(i, 10) * 2 * 1.0); // streak bonus
+			}
+		}
+		
+		if (ScoreManager.getScore() !== expectedScore) {
+			throw new Error(`Expected ${expectedScore}, got ${ScoreManager.getScore()}`);
+		}
+		
+		// Verify streak=11 and =12 both use cap=10 → bonus = 20 each
+		// Streak 11: min(11,10)*2 = 20, Streak 12: min(12,10)*2 = 20
+		// These should be equal caps
+		if (ScoreManager.matchStreak !== 12) {
+			throw new Error(`Expected streak 12, got ${ScoreManager.matchStreak}`);
+		}
+	}
+});
+
+// Test: Streak resets on reset()
+testSuite.tests.push({
+	name: 'Streak - Resets on reset()',
+	async run() {
+		await ConfigManager.loadConfig();
+		ScoreManager.initialize(1);
+		
+		EventEmitter.emit(CONSTANTS.EVENTS.BALLS_CLEARED, { count: 3, matches: 1 });
+		EventEmitter.emit(CONSTANTS.EVENTS.CASCADE_COMPLETE, { cascadeCount: 1 });
+		
+		ScoreManager.reset();
+		
+		if (ScoreManager.matchStreak !== 0) {
+			throw new Error(`Expected streak 0 after reset, got ${ScoreManager.matchStreak}`);
+		}
+	}
+});
+
+// Test: Streak emits matchStreak in SCORE_UPDATE
+testSuite.tests.push({
+	name: 'Streak - Emits matchStreak in SCORE_UPDATE event',
+	async run() {
+		await ConfigManager.loadConfig();
+		ScoreManager.initialize(1);
+		
+		let receivedStreak = null;
+		const handler = (data) => {
+			if (data.matchStreak !== undefined) {
+				receivedStreak = data.matchStreak;
+			}
+		};
+		
+		EventEmitter.on(CONSTANTS.EVENTS.SCORE_UPDATE, handler);
+		
+		EventEmitter.emit(CONSTANTS.EVENTS.BALLS_CLEARED, { count: 3, matches: 1 });
+		EventEmitter.emit(CONSTANTS.EVENTS.CASCADE_COMPLETE, { cascadeCount: 1 });
+		
+		EventEmitter.off(CONSTANTS.EVENTS.SCORE_UPDATE, handler);
+		
+		if (receivedStreak !== 1) {
+			throw new Error(`Expected matchStreak 1 in event, got ${receivedStreak}`);
+		}
+	}
+});
+
+// Test: onNoMatch emits matchStreak=0 in SCORE_UPDATE
+testSuite.tests.push({
+	name: 'Streak - onNoMatch emits matchStreak 0',
+	async run() {
+		await ConfigManager.loadConfig();
+		ScoreManager.initialize(1);
+		
+		// Build streak
+		EventEmitter.emit(CONSTANTS.EVENTS.BALLS_CLEARED, { count: 3, matches: 1 });
+		EventEmitter.emit(CONSTANTS.EVENTS.CASCADE_COMPLETE, { cascadeCount: 1 });
+		
+		let receivedStreak = null;
+		const handler = (data) => {
+			if (data.matchStreak !== undefined) {
+				receivedStreak = data.matchStreak;
+			}
+		};
+		
+		EventEmitter.on(CONSTANTS.EVENTS.SCORE_UPDATE, handler);
+		ScoreManager.onNoMatch();
+		EventEmitter.off(CONSTANTS.EVENTS.SCORE_UPDATE, handler);
+		
+		if (receivedStreak !== 0) {
+			throw new Error(`Expected matchStreak 0 from onNoMatch, got ${receivedStreak}`);
 		}
 	}
 });

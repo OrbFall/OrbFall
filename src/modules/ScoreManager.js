@@ -25,6 +25,7 @@ class ScoreManagerClass {
 		this.level = 1;
 		this.mode = 'CLASSIC';
 		this.currentCascadeData = null;
+		this.matchStreak = 0;
 		this.isInitialized = false;
 		
 		// Bind methods for event listener removal
@@ -46,6 +47,7 @@ class ScoreManagerClass {
 		this.mode = mode || 'CLASSIC';
 		this.score = 0;
 		this.currentCascadeData = null;
+		this.matchStreak = 0;
 		
 		// Remove old listeners if already initialized
 		if (this.isInitialized) {
@@ -141,6 +143,18 @@ class ScoreManagerClass {
 		
 		this.score += points;
 		
+		// Increment match streak and add streak bonus
+		this.matchStreak++;
+		const streakBonus = ConfigManager.get('scoring.streakBonus', 0);
+		const streakCap = ConfigManager.get('scoring.streakCap', 10);
+		let streakPoints = 0;
+		if (streakBonus > 0 && this.matchStreak > 1) {
+			streakPoints = Math.min(this.matchStreak, streakCap) * streakBonus;
+			const diffMultiplier = ConfigManager.get(`scoring.difficultyMultipliers.difficulty${this.difficulty}`, 1.0);
+			streakPoints = Math.floor(streakPoints * diffMultiplier);
+			this.score += streakPoints;
+		}
+		
 		// Get best score for current mode/difficulty/level
 		const bestScore = PlayerManager.getLevelBestScore(this.difficulty, this.level, this.mode) || 0;
 		
@@ -148,8 +162,9 @@ class ScoreManagerClass {
 		EventEmitter.emit(CONSTANTS.EVENTS.SCORE_UPDATE, { 
 			score: this.score,
 			bestScore: bestScore,
-			points: points,
-			cascadeCount: cascadeCount
+			points: points + streakPoints,
+			cascadeCount: cascadeCount,
+			matchStreak: this.matchStreak
 		});
 		
 		// Reset cascade data
@@ -223,12 +238,27 @@ class ScoreManagerClass {
 	}
 	
 	/**
+	 * Reset match streak when piece locks with no matches
+	 * @returns {void}
+	 */
+	onNoMatch() {
+		if (this.matchStreak > 0) {
+			this.matchStreak = 0;
+			EventEmitter.emit(CONSTANTS.EVENTS.SCORE_UPDATE, {
+				score: this.score,
+				matchStreak: 0
+			});
+		}
+	}
+	
+	/**
 	 * Reset score to zero
 	 * @returns {void}
 	 */
 	reset() {
 		this.score = 0;
 		this.currentCascadeData = null;
+		this.matchStreak = 0;
 		EventEmitter.emit(CONSTANTS.EVENTS.SCORE_UPDATE, { 
 			score: 0,
 			bestScore: 0,

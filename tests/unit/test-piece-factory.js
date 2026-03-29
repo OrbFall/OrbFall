@@ -678,4 +678,181 @@ testSuite.tests.push({
 	}
 });
 
+// ============================================
+// Pity Timer Tests
+// ============================================
+
+// Test: piecesSinceLastExplosive resets on reset()
+testSuite.tests.push({
+	name: 'Pity timer - Resets counter on reset()',
+	async run() {
+		await ConfigManager.loadConfig();
+		PieceFactory.reset();
+		PieceFactory.piecesSinceLastExplosive = 99;
+		PieceFactory.reset();
+		
+		if (PieceFactory.piecesSinceLastExplosive !== 0) {
+			throw new Error(`Expected 0, got ${PieceFactory.piecesSinceLastExplosive}`);
+		}
+	}
+});
+
+// Test: _checkPityTimer returns false when disabled
+testSuite.tests.push({
+	name: 'Pity timer - Returns false when disabled',
+	async run() {
+		await ConfigManager.loadConfig();
+		PieceFactory.reset();
+		
+		const savedEnabled = ConfigManager.get('pityTimer.enabled');
+		ConfigManager.config.pityTimer.enabled = false;
+		PieceFactory.piecesSinceLastExplosive = 999;
+		PieceFactory.currentDifficulty = 1;
+		
+		const result = PieceFactory._checkPityTimer(9); // level 9 has EXPLODING unlocked
+		
+		ConfigManager.config.pityTimer.enabled = savedEnabled;
+		
+		if (result !== false) {
+			throw new Error('Expected false when pity timer disabled');
+		}
+	}
+});
+
+// Test: _checkPityTimer returns false when below threshold
+testSuite.tests.push({
+	name: 'Pity timer - Returns false below threshold',
+	async run() {
+		await ConfigManager.loadConfig();
+		PieceFactory.reset();
+		PieceFactory.currentDifficulty = 1;
+		PieceFactory.piecesSinceLastExplosive = 10; // threshold for D1 is 15
+		
+		const result = PieceFactory._checkPityTimer(9);
+		
+		if (result !== false) {
+			throw new Error('Expected false below threshold');
+		}
+	}
+});
+
+// Test: _checkPityTimer returns true when at/above threshold and EXPLODING unlocked
+testSuite.tests.push({
+	name: 'Pity timer - Returns true at threshold with EXPLODING unlocked',
+	async run() {
+		await ConfigManager.loadConfig();
+		PieceFactory.reset();
+		PieceFactory.currentDifficulty = 1;
+		PieceFactory.piecesSinceLastExplosive = 15; // D1 threshold = 15
+		
+		const result = PieceFactory._checkPityTimer(9); // level 9 unlocks EXPLODING
+		
+		if (result !== true) {
+			throw new Error('Expected true at threshold with EXPLODING unlocked');
+		}
+	}
+});
+
+// Test: _checkPityTimer returns false when EXPLODING not yet unlocked
+testSuite.tests.push({
+	name: 'Pity timer - Returns false when EXPLODING not unlocked',
+	async run() {
+		await ConfigManager.loadConfig();
+		PieceFactory.reset();
+		PieceFactory.currentDifficulty = 1;
+		PieceFactory.piecesSinceLastExplosive = 999;
+		
+		const result = PieceFactory._checkPityTimer(1); // level 1 does NOT unlock EXPLODING
+		
+		if (result !== false) {
+			throw new Error('Expected false when EXPLODING not unlocked at level 1');
+		}
+	}
+});
+
+// Test: piecesSinceLastExplosive increments per piece without explosives
+testSuite.tests.push({
+	name: 'Pity timer - Counter increments per non-explosive piece',
+	async run() {
+		await ConfigManager.loadConfig();
+		PieceFactory.reset();
+		
+		// Disable interval and set level low enough that no explosives spawn
+		const savedIntervalEnabled = ConfigManager.get('specialInterval.enabled');
+		ConfigManager.config.specialInterval.enabled = false;
+		const savedPityEnabled = ConfigManager.get('pityTimer.enabled');
+		ConfigManager.config.pityTimer.enabled = false;
+		
+		// Generate a piece at level 1 (no explosives unlocked)
+		PieceFactory.generatePiece(1, 1);
+		PieceFactory.generatePiece(1, 1);
+		PieceFactory.generatePiece(1, 1);
+		
+		ConfigManager.config.specialInterval.enabled = savedIntervalEnabled;
+		ConfigManager.config.pityTimer.enabled = savedPityEnabled;
+		
+		// Counter should have incremented (at level 1, no explosives possible)
+		if (PieceFactory.piecesSinceLastExplosive < 3) {
+			throw new Error(`Expected at least 3 increments, got ${PieceFactory.piecesSinceLastExplosive}`);
+		}
+	}
+});
+
+// ============================================
+// Blocker Failsafe Flag Tests
+// ============================================
+
+// Test: forceExplosiveNext resets on reset()
+testSuite.tests.push({
+	name: 'Blocker failsafe - forceExplosiveNext resets on reset()',
+	async run() {
+		await ConfigManager.loadConfig();
+		PieceFactory.forceExplosiveNext = true;
+		PieceFactory.reset();
+		
+		if (PieceFactory.forceExplosiveNext !== false) {
+			throw new Error('Expected false after reset');
+		}
+	}
+});
+
+// Test: _pickIntervalSpecialType returns EXPLODING when forceExplosiveNext=true
+testSuite.tests.push({
+	name: 'Blocker failsafe - Forces EXPLODING when flag set',
+	async run() {
+		await ConfigManager.loadConfig();
+		PieceFactory.reset();
+		PieceFactory.forceExplosiveNext = true;
+		
+		const type = PieceFactory._pickIntervalSpecialType(9); // level 9 has EXPLODING
+		
+		if (type !== CONSTANTS.BALL_TYPES.EXPLODING) {
+			throw new Error(`Expected EXPLODING, got ${type}`);
+		}
+		
+		// Flag should be cleared after use
+		if (PieceFactory.forceExplosiveNext !== false) {
+			throw new Error('Flag should be cleared after use');
+		}
+	}
+});
+
+// Test: forceExplosiveNext doesn't fire if EXPLODING not unlocked
+testSuite.tests.push({
+	name: 'Blocker failsafe - No force if EXPLODING not unlocked',
+	async run() {
+		await ConfigManager.loadConfig();
+		PieceFactory.reset();
+		PieceFactory.forceExplosiveNext = true;
+		
+		const type = PieceFactory._pickIntervalSpecialType(1); // level 1, no EXPLODING
+		
+		// Should fall through to normal selection (no EXPLODING available at level 1)
+		// The flag should stay true since it wasn't consumed
+		if (type === CONSTANTS.BALL_TYPES.EXPLODING) {
+			throw new Error('Should not force EXPLODING at level 1 (not unlocked)');
+		}
+	}
+});
+
 export default testSuite;

@@ -111,6 +111,7 @@ All pieces are composed of 4-6 colored balls arranged in these configurations:
 - **Removal:** Only by being caught in explosion radius (7×7 area)
 - **Cannot:** Be matched, painted, or affected by normal clears
 - **Behavior:** Falls like normal ball, stacks at bottom, persists until exploded
+- **Flood Failsafe (Implemented):** If blocking ball count on the grid reaches a configurable cap (default: 20), GameEngine forces the next interval special to be an exploding ball. Configured via `blockerFailsafe.enabled` and `blockerFailsafe.maxBlockers`.
 
 ---
 
@@ -209,10 +210,22 @@ All pieces are composed of 4-6 colored balls arranged in these configurations:
   - Define active shapes list.
   - Enable/disable special bag and set weights (if used).
 
-#### 4.5.4 Special Spawn Smoothing (Pity Timer)
-- Add a pity timer for exploding balls: if no explosions appear within X pieces, force an exploding ball in the next piece.
-- Pity timer thresholds must be configurable per difficulty.
-- Pity timer should not override the special interval system; it should supplement random mode only.
+#### 4.5.4 Special Spawn Smoothing (Pity Timer) (Implemented)
+- Tracks `piecesSinceLastExplosive` counter in `PieceFactory`.
+- If no exploding ball appears within a configurable threshold, forces an exploding ball in the next piece.
+- Thresholds are configurable per difficulty in `config.json` under `pityTimer.thresholds`:
+  - Difficulty 1: 15 pieces, Difficulty 2: 17, Difficulty 3: 19, Difficulty 4: 22, Difficulty 5: 25
+- Only fires if `EXPLODING` ball type is unlocked at the current level (level 9+).
+- Counter resets whenever any piece containing an explosive ball is generated.
+- Can be enabled/disabled via `pityTimer.enabled` config key.
+- Works alongside (not instead of) the special interval system.
+
+#### 4.5.5 Blocker Flood Failsafe (Implemented)
+- After each piece locks, `GameEngine._checkBlockerFailsafe()` counts blocking balls on the grid via `Grid.countBlockingBalls()`.
+- If the count meets or exceeds a configurable cap (default: 20), sets `PieceFactory.forceExplosiveNext = true`.
+- The next call to `_pickIntervalSpecialType()` will return `EXPLODING` (if unlocked), clearing the flag.
+- Prevents unrecoverable board states in Rising Tide and high-difficulty games.
+- Configurable via `blockerFailsafe.enabled` and `blockerFailsafe.maxBlockers` in `config.json`.
 
 ---
 
@@ -256,9 +269,20 @@ All pieces are composed of 4-6 colored balls arranged in these configurations:
 - **Difficulty 4:** 2.5x points
 - **Difficulty 5:** 3.0x points
 
-**Score Calculation:** `(ballCount × basePoints + cascadeBonuses) × difficultyMultiplier`
+**Score Calculation:** `(ballCount × basePoints + cascadeBonuses + streakBonus) × difficultyMultiplier`
 
-### 5.4 Score Display (Implemented)
+### 5.4 Consecutive Match Streak (Implemented)
+- **Match Streak Counter:** `ScoreManager.matchStreak` increments each time a piece lock produces any match (cascade), resets to 0 when a piece locks with no matches (`ScoreManager.onNoMatch()`).
+- **Streak Bonus:** Applied when streak ≥ 2: `min(streak, streakCap) × streakBonus × difficultyMultiplier`
+  - Default values: `streakBonus = 2`, `streakCap = 10`
+  - Example: Streak 5 at difficulty 1 → `min(5,10) × 2 × 1.0 = 10` bonus points
+- **HUD Display:** Green "Streak: Nx" indicator appears in `.hud-right` when streak ≥ 2, hidden otherwise.
+- **Floating Text:** Green "Nx STREAK!" floating text shown on screen when streak ≥ 3.
+- **Event Data:** `SCORE_UPDATE` events include `matchStreak` field for UI synchronization.
+- **Reset Conditions:** Streak resets on: `ScoreManager.initialize()`, `ScoreManager.reset()`, or no-match piece lock.
+- **Configurable:** `scoring.streakBonus` and `scoring.streakCap` in `config.json`.
+
+### 5.5 Score Display (Implemented)
 - **Score Manager:** Singleton module tracking score via event system
   - Listens for `BALLS_CLEARED` events to accumulate ball counts per cascade level
   - Tracks `ballsPerLevel` array to support progressive cascade scoring
@@ -631,6 +655,8 @@ All game parameters should be configurable via JSON:
 ### 10.3 Probabilities
 - Special ball spawn rates (exploding, horizontal painter, vertical painter, diagonal painter)
 - Blocking ball spawn rates per difficulty/level
+- Pity timer thresholds per difficulty (`pityTimer.thresholds`)
+- Blocker failsafe cap (`blockerFailsafe.maxBlockers`)
 
 ### 10.4 Scoring
 - Base points per ball
@@ -638,6 +664,8 @@ All game parameters should be configurable via JSON:
 - Row clear bonus
 - Cascade bonus (initial and multiplier)
 - Difficulty multipliers
+- Streak bonus points per streak level (`scoring.streakBonus`)
+- Streak cap (`scoring.streakCap`)
 
 ### 10.5 Animation Timings
 - Match detection delay
@@ -753,16 +781,20 @@ All game parameters should be configurable via JSON:
 - ScoreManager with event-driven architecture
 - Progressive cascade scoring (Level 1: ×1, Level 2: ×2, Level 3: ×3, etc.)
 - Difficulty multipliers (1.0x, 1.5x, 2.0x, 2.5x, 3.0x)
+- Consecutive match streak system with configurable bonus/cap
 - Color-coded floating text system:
   - White: Normal match ball counts
   - Gold: Explosion ball counts
   - Blue: Cascade multipliers (2x, 3x, etc.)
+  - Green: Match streak milestones (3x STREAK!, etc.)
 - Real-time score display updates
 
 ✅ **Special Ball Effects (Phase 5)**
 - Exploding balls: 7×7 area clear on match (configurable spawn rate: 5%)
 - Horizontal/Vertical/Diagonal NE/Diagonal NW painters: Full line painting (configurable spawn rate: 5%)
 - Blocking balls: Spawn system with difficulty/level scaling, explosion-only removal
+- Blocker flood failsafe: Forces explosive spawn when blocking ball count exceeds configurable cap
+- Explosion pity timer: Forces explosive ball after configurable drought threshold per difficulty
 - Painter re-matching: Painted balls immediately re-checked for new matches
 - Explosion scoring: All cleared balls counted and displayed
 
@@ -823,16 +855,16 @@ All game parameters should be configurable via JSON:
 - Grid breach handling per mode (success in ZEN, failure in others)
 
 ✅ **Quality Assurance (Continuous)**
-- 274+ unit tests across 15 test modules
+- 296+ unit tests across 15 test modules
 - Comprehensive test coverage:
   - **Core Utilities:** Helpers (15 tests), EventEmitter (18 tests)
-  - **Game Entities:** Ball (31 tests), Piece (36 tests), Grid (78 tests)
-  - **Factories & Managers:** PieceFactory (17 tests), ScoreManager (25 tests), ConfigManager (12 tests), FloatingText (11 tests)
+  - **Game Entities:** Ball (31 tests), Piece (36 tests), Grid (81 tests)
+  - **Factories & Managers:** PieceFactory (26 tests), ScoreManager (35 tests), ConfigManager (12 tests), FloatingText (11 tests)
 ---
 
-**Document Version:** 2.1  
-**Last Updated:** December 2024  
-**Status:** Living Document - Updated through Phase 9.5 Implementation
+**Document Version:** 2.2  
+**Last Updated:** March 2026  
+**Status:** Living Document - Updated through Phase 9.5 + Phase 10 Gameplay Improvements
 
 ### 14.2 Pending Features (Phase 10 - Documentation & Deployment)
 ⏳ **Documentation**

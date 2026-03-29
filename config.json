@@ -88,8 +88,21 @@
 			"PAINTER_DIAGONAL_NW"
 		]
 	},
+	"pityTimer": {
+		"enabled": true,
+		"thresholds": {
+			"difficulty1": 15,
+			"difficulty2": 17,
+			"difficulty3": 19,
+			"difficulty4": 22,
+			"difficulty5": 25
+		}
+	},
+	"blockerFailsafe": {
+		"enabled": true,
+		"maxBlockers": 20
+	},
 	"specialBag": {
-		"enabled": false,
 		"overallSpawnRate": null,
 		"weights": {
 			"exploding": 1,
@@ -112,7 +125,9 @@
 			"difficulty3": 2.0,
 			"difficulty4": 2.5,
 			"difficulty5": 3.0
-		}
+		},
+		"streakBonus": 2,
+		"streakCap": 10
 	},
 	"difficulty": {
 		"difficulty1": {

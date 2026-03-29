@@ -322,6 +322,15 @@ class GameEngineClass {
 				this.floatingTextManager.add(`${data.cascadeCount}x CASCADE!`, centerX, centerY, 2000, '#4080FF');
 			}
 		});
+		
+		// Streak milestone floating text
+		EventEmitter.on(CONSTANTS.EVENTS.SCORE_UPDATE, (data) => {
+			if (data.matchStreak >= 3) {
+				const centerX = this.renderer.offsetX + (this.grid.cols * this.renderer.cellSize) / 2;
+				const topY = this.renderer.offsetY + 40;
+				this.floatingTextManager.add(`${data.matchStreak}x STREAK!`, centerX, topY, 1500, '#00ff88');
+			}
+		});
 	}
 	
 	/**
@@ -942,6 +951,22 @@ class GameEngineClass {
 	}
 	
 	/**
+	 * Check if blocker count exceeds failsafe cap and force explosive if so
+	 * @private
+	 */
+	_checkBlockerFailsafe() {
+		const enabled = ConfigManager.get('blockerFailsafe.enabled', false);
+		if (!enabled) return;
+		
+		const maxBlockers = ConfigManager.get('blockerFailsafe.maxBlockers', 20);
+		const blockerCount = this.grid.countBlockingBalls();
+		
+		if (blockerCount >= maxBlockers) {
+			PieceFactory.forceExplosiveNext = true;
+		}
+	}
+	
+	/**
 	 * Lock current piece to grid and spawn next piece
 	 * @returns {void}
 	 * @private
@@ -955,6 +980,9 @@ class GameEngineClass {
 		
 		// Check for matches and handle cascades
 		await this._handleMatching();
+		
+		// Blocker flood failsafe: if too many blockers, force explosive on next interval
+		this._checkBlockerFailsafe();
 		
 		// Spawn next piece (handle debug mode)
 		this.currentPiece = this.nextPiece;
@@ -1356,8 +1384,8 @@ class GameEngineClass {
 		// Play cascade sound with escalating pitch
 		AudioManager.playCascade(cascadeCount);
 	} else {
-		// No cascades means no matches - reset cascade data in ScoreManager
-		this.scoreManager?.resetCascadeData?.();
+		// No cascades means no matches - reset streak
+		ScoreManager.onNoMatch();
 	}
 	
 	// Play celebration if we had 5+ scoring events
@@ -1547,73 +1575,13 @@ class GameEngineClass {
 	 */
 	async _applyGravity(removedPositions = []) {
 		const dropSpeed = ConfigManager.get('animations.dropAnimationSpeed', 50);
-		let ballsMoved = true;
 		
 		console.log('[_applyGravity] Starting gravity');
 		
-		// Keep dropping until no balls can fall
-		while (ballsMoved) {
-			ballsMoved = false;
-			
-			// Step 1: Find all balls connected to the bottom (anchored balls)
-			const anchored = new Set();
-			
-			// Start flood fill from bottom row
-			const queue = [];
-			for (let col = 0; col < this.grid.cols; col++) {
-				if (this.grid.getBallAt(this.grid.rows - 1, col) !== null) {
-					queue.push({ row: this.grid.rows - 1, col });
-					anchored.add(`${this.grid.rows - 1},${col}`);
-				}
-			}
-			
-			// Flood fill to find all connected balls (including diagonals)
-			while (queue.length > 0) {
-				const { row, col } = queue.shift();
-				
-				// Check all 8 directions
-				const directions = [
-					[-1, 0], [1, 0], [0, -1], [0, 1],     // orthogonal
-					[-1, -1], [-1, 1], [1, -1], [1, 1]    // diagonal
-				];
-				
-				for (const [dr, dc] of directions) {
-					const newRow = row + dr;
-					const newCol = col + dc;
-					const key = `${newRow},${newCol}`;
-					
-					if (newRow >= 0 && newRow < this.grid.rows && 
-					    newCol >= 0 && newCol < this.grid.cols) {
-						if (this.grid.getBallAt(newRow, newCol) !== null && !anchored.has(key)) {
-							anchored.add(key);
-							queue.push({ row: newRow, col: newCol });
-						}
-					}
-				}
-			}
-			
-			// Step 2: Drop all unanchored balls one row down
-			// Scan from bottom to top to avoid moving same ball twice
-			for (let row = this.grid.rows - 2; row >= 0; row--) {
-				for (let col = 0; col < this.grid.cols; col++) {
-					const key = `${row},${col}`;
-					const ball = this.grid.getBallAt(row, col);
-					
-					// If there's a ball and it's not anchored and space below is empty
-					if (ball && !anchored.has(key) && this.grid.getBallAt(row + 1, col) === null) {
-						// Move ball down
-						this.grid.setBallAt(row + 1, col, ball);
-						this.grid.removeBallAt(row, col);
-						ballsMoved = true;
-					}
-				}
-			}
-			
-			// Render and wait
-			if (ballsMoved) {
-				this.render();
-				await this._delay(dropSpeed);
-			}
+		// Keep dropping until no balls can fall, rendering each step
+		while (this.grid.applyGravityStep()) {
+			this.render();
+			await this._delay(dropSpeed);
 		}
 		
 		console.log('[_applyGravity] Gravity complete');
