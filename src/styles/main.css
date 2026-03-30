@@ -1401,7 +1401,32 @@ body::after {
 	display: flex;
 	gap: 1rem;
 	justify-content: center;
+	flex-wrap: wrap;
 	margin-top: 2rem;
+}
+
+/* Share Button */
+.btn-share {
+	padding: 0.5rem 1rem;
+	border: 2px solid #66bbff;
+	border-radius: 5px;
+	background: linear-gradient(135deg, #1a3a5c, #0d1f33);
+	color: #66bbff;
+	font-size: 0.85rem;
+	font-weight: bold;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.btn-share:hover {
+	background: linear-gradient(135deg, #1e4d75, #122a44);
+	border-color: #99ddff;
+	color: #ffffff;
+}
+
+.btn-share.copied {
+	border-color: #00ff88;
+	color: #00ff88;
 }
 
 /* Game Over Stats */

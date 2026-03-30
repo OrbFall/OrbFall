@@ -34,6 +34,7 @@ import testGoalManager from './test-goal-manager.js';
 import testHintManager from './test-hint-manager.js';
 import testMissionManager from './test-mission-manager.js';
 import testPuzzleManager from './test-puzzle-manager.js';
+import testShareManager from './test-share-manager.js';
 import ConfigManager from '../../src/modules/ConfigManager.js';
 
 /**
@@ -139,6 +140,10 @@ export async function runAllTests() {
 	// Run PuzzleManager tests
 	const puzzleManagerResults = await runAsyncTestSuite(testPuzzleManager);
 	suites.push({ name: testPuzzleManager.name, tests: puzzleManagerResults });
+
+	// Run ShareManager tests
+	const shareManagerResults = await runAsyncTestSuite(testShareManager);
+	suites.push({ name: testShareManager.name, tests: shareManagerResults });
 
 	let totalPassed = 0;
 	let totalFailed = 0;

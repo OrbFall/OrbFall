@@ -12,7 +12,7 @@
  * ============================================================================
  */
 
-const CACHE_VERSION = 'orbfall-v1.0.23';
+const CACHE_VERSION = 'orbfall-v1.0.24';
 const CACHE_NAME = CACHE_VERSION;
 
 /**
@@ -60,6 +60,7 @@ const CORE_ASSETS = [
 	'/src/modules/PWAManager.js',
 	'/src/modules/Renderer.js',
 	'/src/modules/ScoreManager.js',
+	'/src/modules/ShareManager.js',
 	'/src/modules/GoalManager.js',
 	'/src/modules/StatisticsTracker.js',
 	'/src/modules/WeatherBackground.js',

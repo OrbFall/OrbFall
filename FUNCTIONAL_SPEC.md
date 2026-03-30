@@ -356,7 +356,20 @@ All pieces are composed of 4-6 colored balls arranged in these configurations:
 - **Level selector stars:** In PUZZLE mode, each level button shows ★★★/★★☆/★☆☆/☆☆☆ based on player's best score vs thresholds (gold=par)
 - **Config:** `puzzle.pieceLimit`, `puzzle.starThresholds` (`baseScore`, `perLevel`, `bronze`, `silver`, `gold` fractions)
 
-### 5.9 Score Display (Implemented)
+### 5.9 Share / Brag Feature (Implemented)
+- **ShareManager:** Singleton module for sharing post-run results
+  - Stores result data (score, level, difficulty, mode, stars) set by GameEngine after level complete
+  - Builds share text: `"I scored X on Orb•Fall Level Y (Mode, Difficulty)! ⭐⭐⭐ Can you beat it?"`
+  - Star emojis shown for PUZZLE mode results (★ per star earned)
+  - Primary: Web Share API (`navigator.share()`) for native share sheets on supported devices
+  - Fallback: Clipboard API (`navigator.clipboard.writeText()`), then hidden-textarea copy
+  - Returns `'shared'` | `'copied'` | `'failed'` for UI feedback
+- **Share Button:** `📤 Share` button in level-complete overlay (`.btn-share`)
+  - Shows "✅ Copied!" with green accent for 2 seconds on clipboard fallback
+  - Resets label/state each time GameEngine completes a level
+- **Integration:** GameEngine calls `ShareManager.setResult()` after final score + recap computed
+
+### 5.10 Score Display (Implemented)
 - **Score Manager:** Singleton module tracking score via event system
   - Listens for `BALLS_CLEARED` events to accumulate ball counts per cascade level
   - Tracks `ballsPerLevel` array to support progressive cascade scoring
@@ -950,17 +963,17 @@ All game parameters should be configurable via JSON:
 - Grid breach handling per mode (success in ZEN, failure in others)
 
 ✅ **Quality Assurance (Continuous)**
-- 390+ unit tests across 19 test modules
+- 400+ unit tests across 20 test modules
 - Comprehensive test coverage:
   - **Core Utilities:** Helpers (20 tests), EventEmitter (18 tests)
   - **Game Entities:** Ball (31 tests), Piece (36 tests), Grid (88 tests)
-  - **Factories & Managers:** PieceFactory (26 tests), ScoreManager (35 tests), ConfigManager (12 tests), FloatingText (11 tests), GoalManager (10 tests), MissionManager (16 tests), PuzzleManager (15 tests)
+  - **Factories & Managers:** PieceFactory (26 tests), ScoreManager (35 tests), ConfigManager (12 tests), FloatingText (11 tests), GoalManager (10 tests), MissionManager (16 tests), PuzzleManager (15 tests), ShareManager (10 tests)
   - **Game Engine:** GameEngine (22 tests including Zen save/load)
 ---
 
-**Document Version:** 2.8  
+**Document Version:** 2.9  
 **Last Updated:** March 2026  
-**Status:** Living Document - Updated through Phase 10 Gameplay + Mission Mode + Puzzle Mode
+**Status:** Living Document - Updated through Phase 10 Gameplay + Mission Mode + Puzzle Mode + Share/Brag
 
 ### 14.2 Pending Features (Phase 10 - Documentation & Deployment)
 ⏳ **Documentation**

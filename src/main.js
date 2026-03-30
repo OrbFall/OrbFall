@@ -20,6 +20,7 @@ import MonetizationManager from './modules/MonetizationManager.js';
 import PWAManager from './modules/PWAManager.js';
 import HintManager from './modules/HintManager.js';
 import PuzzleManager from './modules/PuzzleManager.js';
+import ShareManager from './modules/ShareManager.js';
 import { ANALYTICS_CONFIG } from './config/analytics.config.js';
 
 /**
@@ -384,6 +385,23 @@ function setupGameScreenListeners() {
 			
 			showScreen('menuScreen');
 			populateLevelGrid(); // Refresh to show newly unlocked levels
+		});
+	}
+
+	// Share button
+	const shareLevelBtn = document.getElementById('shareLevelButton');
+	if (shareLevelBtn) {
+		shareLevelBtn.addEventListener('click', async () => {
+			AudioManager.playClick();
+			const result = await ShareManager.share();
+			if (result === 'copied') {
+				shareLevelBtn.textContent = '✅ Copied!';
+				shareLevelBtn.classList.add('copied');
+				setTimeout(() => {
+					shareLevelBtn.textContent = '📤 Share';
+					shareLevelBtn.classList.remove('copied');
+				}, 2000);
+			}
 		});
 	}
 }

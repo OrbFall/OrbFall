@@ -35,6 +35,7 @@ import GoalManager from './GoalManager.js';
 import HintManager from './HintManager.js';
 import MissionManager from './MissionManager.js';
 import PuzzleManager from './PuzzleManager.js';
+import ShareManager from './ShareManager.js';
 
 /**
  * Game engine class managing core game state and loop
@@ -2145,6 +2146,12 @@ class GameEngineClass {
 		// Clear Zen save — game ended naturally
 		this.clearZenState();
 		
+		// In PUZZLE mode, breach is not a failure — grid full still counts as completion
+		const wasBreach = reason === 'breach';
+		if (wasBreach && this.gameMode === 'PUZZLE') {
+			reason = 'timeout';
+		}
+		
 		// Stop level timer
 		const timeSurvived = LevelManager.levelTimer;
 		LevelManager.stopTimer();
@@ -2220,7 +2227,7 @@ class GameEngineClass {
 					} else if (this.gameMode === 'PUZZLE') {
 						const stars = PuzzleManager.getStars(ScoreManager.getScore(), this.level, this.difficulty);
 						const starStr = '★'.repeat(stars) + '☆'.repeat(3 - stars);
-						reasonText.textContent = `🧩 All Pieces Placed! ${starStr}`;
+						reasonText.textContent = wasBreach ? `🧩 Grid Full! ${starStr}` : `🧩 All Pieces Placed! ${starStr}`;
 					} else {
 						reasonText.textContent = '⏱️ Time Survived!';
 					}
@@ -2331,6 +2338,25 @@ class GameEngineClass {
 
 		// Populate recap stats
 		this._populateRecap(timeSurvived, goalBonus);
+
+		// Store result for sharing
+		const shareData = {
+			score: finalScore,
+			level: this.level,
+			difficulty: this.difficulty,
+			mode: this.gameMode
+		};
+		if (this.gameMode === 'PUZZLE') {
+			shareData.stars = PuzzleManager.getStars(finalScore, this.level, this.difficulty);
+		}
+		ShareManager.setResult(shareData);
+
+		// Reset share button state
+		const shareBtn = document.getElementById('shareLevelButton');
+		if (shareBtn) {
+			shareBtn.textContent = '📤 Share';
+			shareBtn.classList.remove('copied');
+		}
 
 			// Show/hide next level button
 			const nextLevelBtn = document.getElementById('nextLevelButton');
