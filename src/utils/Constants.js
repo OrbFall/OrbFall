@@ -162,7 +162,8 @@ const CONSTANTS = {
 		PWA_OFFLINE: 'pwaOfflineEvent',
 		PWA_UPDATE_AVAILABLE: 'pwaUpdateAvailableEvent',
 		PWA_BEFORE_RELOAD: 'pwaBeforeReloadEvent',
-		GOAL_UPDATE: 'goalUpdateEvent'
+		GOAL_UPDATE: 'goalUpdateEvent',
+		HINT_SHOWN: 'hintShownEvent'
 	},
 	
 	/**

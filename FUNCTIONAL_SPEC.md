@@ -308,7 +308,22 @@ All pieces are composed of 4-6 colored balls arranged in these configurations:
 - **Sequential animation:** Each stat tile fades in with upward slide at 150ms intervals
 - **Existing displays preserved:** Score, best score, high score message, and match stats grid remain unchanged
 
-### 5.7 Score Display (Implemented)
+### 5.7 Mid-Run Hints (Implemented)
+- **HintManager:** Singleton module providing contextual tips during gameplay
+  - **Trigger conditions** (either fires a hint):
+    - Consecutive no-match piece placements ≥ `hints.noMatchThreshold` (default 3)
+    - Board fill ≥ `hints.boardFillPercent` (default 70%)
+  - Hints drawn from configurable `hints.pool` (10 contextual tips)
+  - Each hint shown at most once per level; capped at `hints.maxPerLevel` (default 3)
+  - `onMatch()` resets the no-match counter
+  - Emits `HINT_SHOWN` event when a hint is displayed
+- **Difficulty gating:** Default ON for D1-D2, OFF for D3+; per `hints.difficultyDefault` config map
+- **Settings toggle:** "💡 Show Hints" checkbox in Settings overlay; persisted per-player via `PlayerManager.updateSettings({ hintsEnabled })`
+- **Display:** Hints shown as orange floating text with 💡 prefix, 3-second duration (configurable)
+- **Grid utility:** `Grid.getOccupiedCount()` added for board fill calculation
+- **Config:** `hints.enabled`, `hints.noMatchThreshold`, `hints.boardFillPercent`, `hints.maxPerLevel`, `hints.displayDuration`, `hints.difficultyDefault`, `hints.pool` in `config.json`
+
+### 5.8 Score Display (Implemented)
 - **Score Manager:** Singleton module tracking score via event system
   - Listens for `BALLS_CLEARED` events to accumulate ball counts per cascade level
   - Tracks `ballsPerLevel` array to support progressive cascade scoring
@@ -885,7 +900,7 @@ All game parameters should be configurable via JSON:
 - Grid breach handling per mode (success in ZEN, failure in others)
 
 ✅ **Quality Assurance (Continuous)**
-- 330+ unit tests across 16 test modules
+- 345+ unit tests across 17 test modules
 - Comprehensive test coverage:
   - **Core Utilities:** Helpers (15 tests), EventEmitter (18 tests)
   - **Game Entities:** Ball (31 tests), Piece (36 tests), Grid (88 tests)
@@ -893,9 +908,9 @@ All game parameters should be configurable via JSON:
   - **Game Engine:** GameEngine (22 tests including Zen save/load)
 ---
 
-**Document Version:** 2.5  
+**Document Version:** 2.6  
 **Last Updated:** March 2026  
-**Status:** Living Document - Updated through Phase 10 Gameplay + Rich Post-Run Recap
+**Status:** Living Document - Updated through Phase 10 Gameplay + Mid-Run Hints
 
 ### 14.2 Pending Features (Phase 10 - Documentation & Deployment)
 ⏳ **Documentation**

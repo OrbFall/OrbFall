@@ -18,6 +18,7 @@ import AnalyticsManager from './modules/AnalyticsManager.js';
 import AdManager from './modules/AdManager.js';
 import MonetizationManager from './modules/MonetizationManager.js';
 import PWAManager from './modules/PWAManager.js';
+import HintManager from './modules/HintManager.js';
 import { ANALYTICS_CONFIG } from './config/analytics.config.js';
 
 /**
@@ -607,6 +608,9 @@ function showSettingsOverlay() {
 		if (sfxSlider) sfxSlider.value = settings.sfxVolume * 100;
 		if (musicSlider) musicSlider.value = settings.musicVolume * 100;
 		
+		const hintsToggle = document.getElementById('hintsToggle');
+		if (hintsToggle) hintsToggle.checked = settings.hintsEnabled !== false;
+		
 		// Update value displays
 		updateVolumeDisplay('masterVolumeValue', settings.masterVolume * 100);
 		updateVolumeDisplay('sfxVolumeValue', settings.sfxVolume * 100);
@@ -699,6 +703,16 @@ function setupSettingsControls() {
 			updateVolumeDisplay('musicVolumeValue', e.target.value);
 			// Save to current player's settings
 			PlayerManager.updateSettings({ musicVolume: value });
+		});
+	}
+	
+	// Hints toggle
+	const hintsToggle = document.getElementById('hintsToggle');
+	if (hintsToggle) {
+		hintsToggle.addEventListener('change', (e) => {
+			const hintsEnabled = e.target.checked;
+			HintManager.setEnabled(hintsEnabled);
+			PlayerManager.updateSettings({ hintsEnabled });
 		});
 	}
 	

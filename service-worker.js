@@ -47,6 +47,7 @@ const CORE_ASSETS = [
 	'/src/modules/FloatingText.js',
 	'/src/modules/GameEngine.js',
 	'/src/modules/Grid.js',
+	'/src/modules/HintManager.js',
 	'/src/modules/InputHandler.js',
 	'/src/modules/LevelManager.js',
 	'/src/modules/MonetizationManager.js',

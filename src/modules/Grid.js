@@ -120,6 +120,22 @@ class Grid {
 	}
 	
 	/**
+	 * Count the number of occupied (non-null) cells
+	 * @returns {Number} Count of cells containing a ball
+	 */
+	getOccupiedCount() {
+		let count = 0;
+		for (let row = 0; row < this.rows; row++) {
+			for (let col = 0; col < this.cols; col++) {
+				if (this.grid[row][col] !== null) {
+					count++;
+				}
+			}
+		}
+		return count;
+	}
+
+	/**
 	 * Count the number of blocking balls on the grid
 	 * @returns {Number} Count of blocking balls
 	 */

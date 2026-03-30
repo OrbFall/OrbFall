@@ -32,6 +32,7 @@ import StatisticsTracker from './StatisticsTracker.js';
 import PlayerManager from './PlayerManager.js';
 import AnalyticsManager from './AnalyticsManager.js';
 import GoalManager from './GoalManager.js';
+import HintManager from './HintManager.js';
 
 /**
  * Game engine class managing core game state and loop
@@ -639,6 +640,9 @@ class GameEngineClass {
 		
 		// Initialize GoalManager (optional per-level goals)
 		GoalManager.initialize(this.difficulty, this.level);
+		
+		// Initialize HintManager for this difficulty
+		HintManager.initialize(this.difficulty);
 		
 		// Set drop speed based on difficulty
 		this.dropInterval = Math.max(200, 1000 - (difficulty * 150));
@@ -1408,9 +1412,17 @@ class GameEngineClass {
 		EventEmitter.emit(CONSTANTS.EVENTS.CASCADE_COMPLETE, { cascadeCount });
 		// Play cascade sound with escalating pitch
 		AudioManager.playCascade(cascadeCount);
+		HintManager.onMatch();
 	} else {
 		// No cascades means no matches - reset streak
 		ScoreManager.onNoMatch();
+		// Check if a hint should be shown
+		const hint = HintManager.onNoMatch(this.grid);
+		if (hint) {
+			const centerX = this.renderer.offsetX + (this.grid.cols * this.renderer.cellSize) / 2;
+			const topY = this.renderer.offsetY + 80;
+			this.floatingTextManager.add(`💡 ${hint}`, centerX, topY, ConfigManager.get('hints.displayDuration', 3000), '#FFA500');
+		}
 	}
 	
 	// Play celebration if we had 5+ scoring events
@@ -1862,6 +1874,9 @@ class GameEngineClass {
 		
 		// Initialize goals (fresh — goal progress not persisted in Zen saves)
 		GoalManager.initialize(this.difficulty, this.level);
+		
+		// Initialize hints for this difficulty
+		HintManager.initialize(this.difficulty);
 		
 		// Restore PieceFactory counters
 		PieceFactory.piecesDropped = state.piecesDropped || 0;

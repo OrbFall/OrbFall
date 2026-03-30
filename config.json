@@ -156,6 +156,32 @@
 		},
 		"goalsPerLevel": 2
 	},
+	"hints": {
+		"enabled": true,
+		"noMatchThreshold": 3,
+		"boardFillPercent": 70,
+		"maxPerLevel": 3,
+		"displayDuration": 3000,
+		"difficultyDefault": {
+			"1": true,
+			"2": true,
+			"3": false,
+			"4": false,
+			"5": false
+		},
+		"pool": [
+			"Try grouping same colors together",
+			"Use painters to set up chain reactions",
+			"Place pieces near same-colored orbs",
+			"Explosions clear a 3×3 area — position them wisely",
+			"Build columns of matching colors for big cascades",
+			"Don't let the grid fill up — clear space early",
+			"Diagonal painters can reach far corners",
+			"Streaks multiply your score — keep matching!",
+			"Rotate pieces to find the best fit",
+			"Cascades earn more points at each level"
+		]
+	},
 	"difficulty": {
 		"difficulty1": {
 			"name": "Easy",
