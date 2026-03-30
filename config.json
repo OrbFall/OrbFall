@@ -156,6 +156,20 @@
 		},
 		"goalsPerLevel": 2
 	},
+	"mission": {
+		"pointsPerGoal": 50,
+		"timeBonusMultiplier": 2,
+		"goalChain": [
+			{ "type": "clearBalls", "label": "Clear {n} orbs", "base": 10, "perDifficulty": 3 },
+			{ "type": "cascade", "label": "Achieve a {n}x cascade", "base": 2, "perDifficulty": 0.2, "max": 5 },
+			{ "type": "useSpecials", "label": "Clear {n} special orbs", "base": 2, "perDifficulty": 1, "max": 10 },
+			{ "type": "streak", "label": "Reach a {n}x streak", "base": 3, "perDifficulty": 0.5, "max": 8 },
+			{ "type": "clearBalls", "label": "Clear {n} orbs", "base": 20, "perDifficulty": 5 },
+			{ "type": "cascade", "label": "Achieve a {n}x cascade", "base": 3, "perDifficulty": 0.3, "max": 6 },
+			{ "type": "useSpecials", "label": "Clear {n} special orbs", "base": 4, "perDifficulty": 1.5, "max": 15 },
+			{ "type": "clearBalls", "label": "Clear {n} orbs", "base": 30, "perDifficulty": 8 }
+		]
+	},
 	"hints": {
 		"enabled": true,
 		"noMatchThreshold": 3,

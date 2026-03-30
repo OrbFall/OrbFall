@@ -12,7 +12,7 @@
  * ============================================================================
  */
 
-const CACHE_VERSION = 'orbfall-v1.0.20';
+const CACHE_VERSION = 'orbfall-v1.0.22';
 const CACHE_NAME = CACHE_VERSION;
 
 /**
@@ -50,6 +50,7 @@ const CORE_ASSETS = [
 	'/src/modules/HintManager.js',
 	'/src/modules/InputHandler.js',
 	'/src/modules/LevelManager.js',
+	'/src/modules/MissionManager.js',
 	'/src/modules/MonetizationManager.js',
 	'/src/modules/ParticleSystem.js',
 	'/src/modules/Piece.js',

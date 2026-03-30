@@ -114,6 +114,15 @@ class PieceFactoryClass {
 	}
 
 	/**
+	 * Public wrapper for _getUnlockedSpecialTypes.
+	 * @param {Number} level
+	 * @returns {Array<String>}
+	 */
+	getUnlockedSpecialTypes(level) {
+		return this._getUnlockedSpecialTypes(level);
+	}
+
+	/**
 	 * Check if a special ball should spawn
 	 * @param {String} specialType - Type of special ball (exploding, painterHorizontal, etc.)
 	 * @returns {Boolean} True if special ball should spawn

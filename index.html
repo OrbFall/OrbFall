@@ -76,6 +76,7 @@
 					<button class="mode-btn" data-mode="ZEN" title="Untimed - focus on combos">Zen</button>
 					<button class="mode-btn" data-mode="GAUNTLET" title="Start with pre-filled rows">Gauntlet</button>
 					<button class="mode-btn" data-mode="RISING_TIDE" title="Blocks rise from bottom">Rising Tide</button>
+					<button class="mode-btn" data-mode="MISSION" title="Complete sequential micro-goals">Mission</button>
 				</div>
 				<label class="setup-label">Level</label>
 				<div id="levelGrid" class="level-grid">
@@ -150,6 +151,12 @@
 			<div id="goalItems" class="goal-items">
 				<!-- Populated by JavaScript -->
 			</div>
+		</div>
+		<!-- Mission Objective Banner -->
+		<div id="missionBanner" class="mission-banner hidden">
+			<span class="mission-banner-label">🎯 Mission:</span>
+			<span id="missionObjective" class="mission-objective"></span>
+			<span id="missionProgress" class="mission-progress"></span>
 		</div>
 		<!-- Game Board Container -->
 		<div class="game-container">

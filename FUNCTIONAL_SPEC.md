@@ -323,7 +323,24 @@ All pieces are composed of 4-6 colored balls arranged in these configurations:
 - **Grid utility:** `Grid.getOccupiedCount()` added for board fill calculation
 - **Config:** `hints.enabled`, `hints.noMatchThreshold`, `hints.boardFillPercent`, `hints.maxPerLevel`, `hints.displayDuration`, `hints.difficultyDefault`, `hints.pool` in `config.json`
 
-### 5.8 Score Display (Implemented)
+### 5.8 Mission Mode (Implemented)
+- **MissionManager:** Singleton module managing a sequential micro-goal chain
+  - `initialize(difficulty)` builds goal chain from `mission.goalChain` config
+  - Goals revealed one at a time; completing one advances to the next
+  - **Goal Types:** `clearBalls`, `cascade`, `useSpecials`, `streak`
+  - Listens to `BALLS_CLEARED`, `CASCADE_COMPLETE`, `SCORE_UPDATE` events
+  - Only the current goal receives event progress (no parallel advancement)
+  - `calculateScore(remainingTime)` = `goalsCompleted × pointsPerGoal + floor(remainingTime × timeBonusMultiplier)`
+  - Emits `MISSION_GOAL_UPDATE` event with current goal, progress, and chain status
+- **MISSION game mode:** Added to `CONSTANTS.GAME_MODES` and `GAME_MODE_CONFIG` (timed, no rising blocks)
+- **Menu UI:** "Mission" button added to mode selector
+- **HUD:** Mission objective banner (`#missionBanner`) shows current goal label and progress
+- **GameEngine integration:** Initializes MissionManager instead of GoalManager when in MISSION mode; mission score calculated at level end with time bonus; floating text for goal completions and chain complete
+- **Scoring:** Base points per goal (default 50) + time bonus (remainingTime × 2), replacing GoalManager bonus in MISSION mode
+- **Config:** `mission.pointsPerGoal`, `mission.timeBonusMultiplier`, `mission.goalChain[]` with 8 escalating micro-goals
+- **Bug fix:** ScoreManager now receives `gameMode` parameter from GameEngine.start() (was defaulting to CLASSIC)
+
+### 5.9 Score Display (Implemented)
 - **Score Manager:** Singleton module tracking score via event system
   - Listens for `BALLS_CLEARED` events to accumulate ball counts per cascade level
   - Tracks `ballsPerLevel` array to support progressive cascade scoring
@@ -380,6 +397,14 @@ Four distinct game modes offer different play styles:
 - Steady accumulation of obstacles
 - Requires strategic use of exploding balls
 - Progressive difficulty as blocking orbs accumulate
+
+**MISSION Mode**
+- Timed gameplay with sequential micro-goals
+- Goals revealed one at a time from a configurable chain of 8
+- Goal types: clearBalls, cascade, useSpecials, streak
+- Completing a goal immediately reveals the next
+- Score = goalsCompleted × pointsPerGoal + remainingTime × timeBonusMultiplier
+- Tests adaptability across different play styles
 
 **Mode-Specific Progression:**
 - Each mode tracks progression independently
@@ -900,17 +925,17 @@ All game parameters should be configurable via JSON:
 - Grid breach handling per mode (success in ZEN, failure in others)
 
 ✅ **Quality Assurance (Continuous)**
-- 345+ unit tests across 17 test modules
+- 370+ unit tests across 18 test modules
 - Comprehensive test coverage:
   - **Core Utilities:** Helpers (15 tests), EventEmitter (18 tests)
   - **Game Entities:** Ball (31 tests), Piece (36 tests), Grid (88 tests)
-  - **Factories & Managers:** PieceFactory (26 tests), ScoreManager (35 tests), ConfigManager (12 tests), FloatingText (11 tests), GoalManager (10 tests)
+  - **Factories & Managers:** PieceFactory (26 tests), ScoreManager (35 tests), ConfigManager (12 tests), FloatingText (11 tests), GoalManager (10 tests), MissionManager (16 tests)
   - **Game Engine:** GameEngine (22 tests including Zen save/load)
 ---
 
-**Document Version:** 2.6  
+**Document Version:** 2.7  
 **Last Updated:** March 2026  
-**Status:** Living Document - Updated through Phase 10 Gameplay + Mid-Run Hints
+**Status:** Living Document - Updated through Phase 10 Gameplay + Mission Mode
 
 ### 14.2 Pending Features (Phase 10 - Documentation & Deployment)
 ⏳ **Documentation**

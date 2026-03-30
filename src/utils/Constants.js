@@ -78,7 +78,8 @@ const CONSTANTS = {
 		CLASSIC: 'CLASSIC',      // Original timed mode
 		ZEN: 'ZEN',              // Untimed, play until grid fills
 		GAUNTLET: 'GAUNTLET',    // Pre-filled rows at start
-		RISING_TIDE: 'RISING_TIDE' // Blocking rows rise from bottom
+		RISING_TIDE: 'RISING_TIDE', // Blocking rows rise from bottom
+		MISSION: 'MISSION'        // Sequential micro-goal chain
 	},
 	
 	/**
@@ -114,6 +115,13 @@ const CONSTANTS = {
 			preFillRows: 0,
 			risingBlocks: true,
 			risingInterval: 9000 // milliseconds
+		},
+		MISSION: {
+			name: 'Mission',
+			description: 'Complete sequential micro-goals before time runs out',
+			timed: true,
+			preFillRows: 0,
+			risingBlocks: false
 		}
 	},
 	
@@ -163,7 +171,8 @@ const CONSTANTS = {
 		PWA_UPDATE_AVAILABLE: 'pwaUpdateAvailableEvent',
 		PWA_BEFORE_RELOAD: 'pwaBeforeReloadEvent',
 		GOAL_UPDATE: 'goalUpdateEvent',
-		HINT_SHOWN: 'hintShownEvent'
+		HINT_SHOWN: 'hintShownEvent',
+		MISSION_GOAL_UPDATE: 'missionGoalUpdateEvent'
 	},
 	
 	/**

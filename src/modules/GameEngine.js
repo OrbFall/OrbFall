@@ -33,6 +33,7 @@ import PlayerManager from './PlayerManager.js';
 import AnalyticsManager from './AnalyticsManager.js';
 import GoalManager from './GoalManager.js';
 import HintManager from './HintManager.js';
+import MissionManager from './MissionManager.js';
 
 /**
  * Game engine class managing core game state and loop
@@ -347,6 +348,20 @@ class GameEngineClass {
 				this.floatingTextManager.add('⭐ GOAL COMPLETE!', centerX, topY, 2000, '#FFD700');
 			}
 		});
+
+		// Mission goal completion floating text
+		EventEmitter.on(CONSTANTS.EVENTS.MISSION_GOAL_UPDATE, (data) => {
+			if (!data.current) return;
+			if (data.current.completed) {
+				const centerX = this.renderer.offsetX + (this.grid.cols * this.renderer.cellSize) / 2;
+				const topY = this.renderer.offsetY + 60;
+				if (data.chainComplete) {
+					this.floatingTextManager.add('🏆 ALL MISSIONS COMPLETE!', centerX, topY, 2500, '#FFD700');
+				} else {
+					this.floatingTextManager.add(`✅ Mission ${data.goalsCompleted}/${data.totalGoals}!`, centerX, topY, 2000, '#00FF88');
+				}
+			}
+		});
 	}
 	
 	/**
@@ -636,10 +651,15 @@ class GameEngineClass {
 		PieceFactory.reset();
 		
 		// Initialize ScoreManager
-		ScoreManager.initialize(this.difficulty, this.level);
+		ScoreManager.initialize(this.difficulty, this.level, this.gameMode);
 		
-		// Initialize GoalManager (optional per-level goals)
-		GoalManager.initialize(this.difficulty, this.level);
+		// Initialize GoalManager (optional per-level goals) — skip for MISSION mode
+		if (this.gameMode !== 'MISSION') {
+			GoalManager.initialize(this.difficulty, this.level);
+		} else {
+			GoalManager.reset();
+			MissionManager.initialize(this.difficulty, this.level);
+		}
 		
 		// Initialize HintManager for this difficulty
 		HintManager.initialize(this.difficulty);
@@ -676,7 +696,8 @@ class GameEngineClass {
 				'CLASSIC': 'Classic',
 				'ZEN': 'Zen',
 				'GAUNTLET': 'Gauntlet',
-				'RISING_TIDE': 'Rising Tide'
+				'RISING_TIDE': 'Rising Tide',
+				'MISSION': 'Mission'
 			};
 			modeDisplay.textContent = modeNames[this.gameMode] || this.gameMode;
 		}
@@ -2168,22 +2189,41 @@ class GameEngineClass {
 					// Different message for ZEN mode
 					if (this.gameMode === 'ZEN') {
 						reasonText.textContent = '🧘 Grid Filled - Zen Achieved!';
+					} else if (this.gameMode === 'MISSION') {
+						reasonText.textContent = `🎯 Missions: ${MissionManager.getGoalsCompleted()}/${MissionManager.getTotalGoals()} Complete!`;
 					} else {
 						reasonText.textContent = '⏱️ Time Survived!';
 					}
 				}
 			} else {
 				if (title) title.textContent = 'Level Over';
-				if (reasonText) reasonText.textContent = '⚠️ Grid Breached!';
+				if (reasonText) {
+					if (this.gameMode === 'MISSION') {
+						reasonText.textContent = `⚠️ Grid Breached — ${MissionManager.getGoalsCompleted()}/${MissionManager.getTotalGoals()} Missions`;
+					} else {
+						reasonText.textContent = '⚠️ Grid Breached!';
+					}
+				}
 			}
 			
 			// Get current stats
 			const currentScore = ScoreManager.getScore();
 			
-			// Add goal bonus to score
-			const goalBonus = GoalManager.getCompletedBonus();
-			if (goalBonus > 0) {
-				ScoreManager.addPoints(goalBonus);
+			// Add goal bonus or mission score
+			let goalBonus = 0;
+			if (this.gameMode === 'MISSION') {
+				const remainingTime = LevelManager.getRemainingTime();
+				const missionScore = MissionManager.calculateScore(remainingTime);
+				if (missionScore > 0) {
+					ScoreManager.addPoints(missionScore);
+				}
+				goalBonus = missionScore;
+				MissionManager.reset();
+			} else {
+				goalBonus = GoalManager.getCompletedBonus();
+				if (goalBonus > 0) {
+					ScoreManager.addPoints(goalBonus);
+				}
 			}
 			const finalScore = ScoreManager.getScore();
 			

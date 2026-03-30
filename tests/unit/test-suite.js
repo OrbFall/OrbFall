@@ -32,6 +32,7 @@ import testAdManager from './test-ad-manager.js';
 import testMonetizationManager from './test-monetization-manager.js';
 import testGoalManager from './test-goal-manager.js';
 import testHintManager from './test-hint-manager.js';
+import testMissionManager from './test-mission-manager.js';
 import ConfigManager from '../../src/modules/ConfigManager.js';
 
 /**
@@ -129,6 +130,10 @@ export async function runAllTests() {
 	// Run HintManager tests
 	const hintManagerResults = await runAsyncTestSuite(testHintManager);
 	suites.push({ name: testHintManager.name, tests: hintManagerResults });
+
+	// Run MissionManager tests
+	const missionManagerResults = await runAsyncTestSuite(testMissionManager);
+	suites.push({ name: testMissionManager.name, tests: missionManagerResults });
 
 	let totalPassed = 0;
 	let totalFailed = 0;

@@ -431,6 +431,30 @@ function setupScoreListener() {
 			goalItems.appendChild(item);
 		});
 	});
+
+	// Mission objective display
+	const missionBanner = document.getElementById('missionBanner');
+	const missionObjective = document.getElementById('missionObjective');
+	const missionProgress = document.getElementById('missionProgress');
+
+	EventEmitter.on(CONSTANTS.EVENTS.MISSION_GOAL_UPDATE, (data) => {
+		if (!missionBanner) return;
+
+		if (!data.current && !data.chainComplete) {
+			missionBanner.classList.add('hidden');
+			return;
+		}
+
+		missionBanner.classList.remove('hidden');
+
+		if (data.chainComplete) {
+			if (missionObjective) missionObjective.textContent = 'All missions complete!';
+			if (missionProgress) missionProgress.textContent = `${data.goalsCompleted}/${data.totalGoals}`;
+		} else if (data.current) {
+			if (missionObjective) missionObjective.textContent = data.current.label;
+			if (missionProgress) missionProgress.textContent = `${data.current.progress}/${data.current.target}`;
+		}
+	});
 }
 
 /**
