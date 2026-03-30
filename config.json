@@ -8,6 +8,94 @@
 		"minDropSpeed": 100,
 		"maxSpecialBallsPerPiece": 2
 	},
+	"progression": {
+		"enabled": true,
+		"version": 1,
+		"enforceSingleMaterialChange": true,
+		"defaultProfile": {
+			"baseline": {
+				"dropIntervalMs": 1000,
+				"lockDelayMs": 500,
+				"diagonalScoreMultiplier": 1.0,
+				"painterSpawnMultiplier": 1.0,
+				"colors": ["red", "green", "blue"],
+				"pieces": ["I", "O", "T", "L", "J", "S", "Z"],
+				"specials": []
+			},
+			"levels": {
+				"1": { "primaryChange": "baseline", "briefing": "Learn the basics with the starter set." },
+				"2": { "primaryChange": "speed", "speed": { "dropIntervalMultiplier": 0.95 }, "briefing": "Drop speed is 5% faster." },
+				"3": { "primaryChange": "colorUnlock", "colorUnlock": { "add": "yellow" }, "briefing": "Yellow orbs are now in play." },
+				"4": { "primaryChange": "lock", "lock": { "lockDelayMultiplier": 0.95 }, "briefing": "Pieces settle 5% faster after landing." },
+				"5": { "primaryChange": "specialUnlock", "specialUnlock": { "add": "PAINTER_HORIZONTAL" }, "briefing": "Horizontal Painter unlocked." },
+				"6": { "primaryChange": "speed", "speed": { "dropIntervalMultiplier": 0.95 }, "briefing": "Drop speed is 5% faster." },
+				"7": { "primaryChange": "pieceUnlock", "pieceUnlock": { "add": "V" }, "briefing": "A new piece layout is now in rotation." },
+				"8": { "primaryChange": "lock", "lock": { "lockDelayMultiplier": 0.95 }, "briefing": "Pieces settle 5% faster after landing." },
+				"9": { "primaryChange": "specialUnlock", "specialUnlock": { "add": "PAINTER_VERTICAL" }, "briefing": "Vertical Painter unlocked." },
+				"10": { "primaryChange": "speed", "speed": { "dropIntervalMultiplier": 0.95 }, "briefing": "Drop speed is 5% faster." },
+				"11": { "primaryChange": "colorUnlock", "colorUnlock": { "add": "magenta" }, "briefing": "Magenta orbs are now in play." },
+				"12": { "primaryChange": "pieceUnlock", "pieceUnlock": { "add": "Line3" }, "briefing": "A new piece layout is now in rotation." },
+				"13": { "primaryChange": "specialUnlock", "specialUnlock": { "add": "PAINTER_DIAGONAL_NE" }, "briefing": "Diagonal Painter (NE-SW) unlocked." },
+				"14": { "primaryChange": "specialUnlock", "specialUnlock": { "add": "PAINTER_DIAGONAL_NW" }, "briefing": "Diagonal Painter (NW-SE) unlocked." },
+				"15": { "primaryChange": "speed", "speed": { "dropIntervalMultiplier": 0.95 }, "briefing": "Drop speed is 5% faster." },
+				"16": { "primaryChange": "lock", "lock": { "lockDelayMultiplier": 0.95 }, "briefing": "Pieces settle 5% faster after landing." },
+				"17": { "primaryChange": "colorUnlock", "colorUnlock": { "add": "cyan" }, "briefing": "Cyan orbs are now in play." },
+				"18": { "primaryChange": "pieceUnlock", "pieceUnlock": { "add": "Plus" }, "briefing": "A new piece layout is now in rotation." },
+				"19": { "primaryChange": "specialUnlock", "specialUnlock": { "add": "EXPLODING" }, "briefing": "Exploding Orbs unlocked." },
+				"20": { "primaryChange": "speed", "speed": { "dropIntervalMultiplier": 0.95 }, "briefing": "Drop speed is 5% faster." },
+				"21": { "primaryChange": "pieceUnlock", "pieceUnlock": { "add": "U" }, "briefing": "A new piece layout is now in rotation." },
+				"22": { "primaryChange": "lock", "lock": { "lockDelayMultiplier": 0.95 }, "briefing": "Pieces settle 5% faster after landing." },
+				"23": { "primaryChange": "colorUnlock", "colorUnlock": { "add": "orange" }, "briefing": "Orange orbs are now in play." },
+				"24": { "primaryChange": "spawnRateChange", "spawnRateChange": { "painterSpawnMultiplierMultiplier": 1.1 }, "briefing": "Painter Orbs appear more often." },
+				"25": { "primaryChange": "pieceUnlock", "pieceUnlock": { "add": "P" }, "briefing": "A new piece layout is now in rotation." },
+				"26": { "primaryChange": "speed", "speed": { "dropIntervalMultiplier": 0.95 }, "briefing": "Drop speed is 5% faster." },
+				"27": { "primaryChange": "colorUnlock", "colorUnlock": { "add": "purple" }, "briefing": "Purple orbs are now in play." },
+				"28": { "primaryChange": "scoreBonusChange", "scoreBonusChange": { "diagonalScoreMultiplierMultiplier": 1.1 }, "briefing": "Diagonal matches now score more points." },
+				"29": { "primaryChange": "pieceUnlock", "pieceUnlock": { "add": "Y" }, "briefing": "A new piece layout is now in rotation." },
+				"30": { "primaryChange": "lock", "lock": { "lockDelayMultiplier": 0.95 }, "briefing": "Pieces settle 5% faster after landing." }
+			}
+		},
+		"modeProfiles": {
+			"ZEN": {
+				"baseline": { "lockDelayMs": 550 },
+				"levels": {
+					"1": { "primaryChange": "baseline", "briefing": "No timer in Zen mode. Focus on combos and flow." }
+				}
+			},
+			"RISING_TIDE": {
+				"levels": {
+					"1": { "primaryChange": "baseline", "briefing": "Rows rise over time in Rising Tide mode." }
+				}
+			}
+		},
+		"modeDifficultyProfiles": {
+			"CLASSIC": {
+				"difficulty1": {
+					"baseline": { "dropIntervalMs": 850, "lockDelayMs": 500 }
+				},
+				"difficulty2": {
+					"baseline": { "dropIntervalMs": 700, "lockDelayMs": 475 }
+				},
+				"difficulty3": {
+					"baseline": { "dropIntervalMs": 550, "lockDelayMs": 425 }
+				},
+				"difficulty4": {
+					"baseline": { "dropIntervalMs": 400, "lockDelayMs": 375 }
+				},
+				"difficulty5": {
+					"baseline": { "dropIntervalMs": 250, "lockDelayMs": 300 }
+				}
+			},
+			"RISING_TIDE": {
+				"difficulty5": {
+					"baseline": {
+						"lockDelayMs": 275,
+						"painterSpawnMultiplier": 2.0
+					}
+				}
+			}
+		}
+	},
 	"colors": {
 		"balls": {
 			"red": "#FF0000",
@@ -43,11 +131,11 @@
 	},
 	"specialBalls": {
 		"featureUnlocks": {
-			"PAINTER_HORIZONTAL": 3,
-			"PAINTER_VERTICAL": 5,
-			"PAINTER_DIAGONAL_NE": 7,
-			"PAINTER_DIAGONAL_NW": 7,
-			"EXPLODING": 9
+			"PAINTER_HORIZONTAL": 5,
+			"PAINTER_VERTICAL": 9,
+			"PAINTER_DIAGONAL_NE": 13,
+			"PAINTER_DIAGONAL_NW": 14,
+			"EXPLODING": 19
 		},
 		"exploding": {
 			"spawnRate": 0.05,

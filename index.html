@@ -38,26 +38,35 @@
 		
 		<!-- Menu Screen -->
 		<div id="menuScreen" class="screen">
+			<div class="player-pill-container">
+				<button id="playerPillToggle" class="player-pill-toggle" type="button" aria-haspopup="true" aria-expanded="false">
+					<span class="player-pill-label">Playing as:</span>
+					<span id="playerCurrentName" class="player-pill-name">Guest</span>
+					<span class="player-pill-caret">▾</span>
+				</button>
+				<div id="playerPillMenu" class="player-pill-menu hidden" role="menu" aria-label="Player menu">
+					<div id="playerMenuList" class="player-menu-list"></div>
+					<button id="playerMenuAdd" class="player-menu-add" type="button">+ Add Player</button>
+				</div>
+			</div>
+			<a
+				href="https://discord.gg/2pcnCUkgrK"
+				target="_blank"
+				rel="noopener noreferrer"
+				class="menu-top-pill menu-discord-pill"
+			>
+				Join Discord
+			</a>
 			<a
 				href="https://github.com/stomli/coding/issues"
 				target="_blank"
 				rel="noopener noreferrer"
-				class="menu-report-bugs-pill"
+				class="menu-top-pill menu-report-bugs-pill"
 			>
-				Report Bugs and Suggestions
+				Bugs & Suggestions
 			</a>
 			<div class="menu-container">
 				<img src="src/img/Logotrans.png" alt="Orb Fall Logo" class="game-logo">
-
-			<!-- Player Bar -->
-			<div class="player-bar">
-				<span class="player-bar-label">Playing as:</span>
-				<select id="playerSelect" class="player-select">
-					<!-- Options populated by JavaScript -->
-				</select>
-				<button id="addPlayerButton" class="btn-icon" title="Add New Player">➕</button>
-				<button id="deletePlayerButton" class="btn-icon" title="Delete Player">🗑️</button>
-			</div>
 
 			<!-- Game Setup -->
 			<div class="game-setup">
@@ -358,6 +367,22 @@
 					<button id="replayLevelButton" class="btn-secondary">Replay Level</button>
 					<button id="menuFromCompleteButton" class="btn-secondary">Main Menu</button>
 					<button id="shareLevelButton" class="btn-share" title="Share your score">📤 Share</button>
+				</div>
+			</div>
+		</div>
+
+		<!-- Level Changes Overlay -->
+		<div id="levelChangesOverlay" class="overlay hidden">
+			<div class="overlay-content level-changes-content">
+				<h2 id="levelChangesTitle">Level Changes</h2>
+				<p id="levelChangesSubtitle" class="level-changes-subtitle"></p>
+				<div id="levelChangesList" class="level-changes-list"></div>
+				<label class="level-changes-hide-option" for="hideLevelChangesCheckbox">
+					<input type="checkbox" id="hideLevelChangesCheckbox">
+					Hide this level briefing next time
+				</label>
+				<div class="overlay-actions">
+					<button id="levelChangesContinueButton" class="btn-primary">Start Level</button>
 				</div>
 			</div>
 		</div>

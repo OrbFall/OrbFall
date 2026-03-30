@@ -344,6 +344,7 @@ function setupGameScreenListeners() {
 	const nextLevelBtn = document.getElementById('nextLevelButton');
 	const replayLevelBtn = document.getElementById('replayLevelButton');
 	const menuFromCompleteBtn = document.getElementById('menuFromCompleteButton');
+	const levelChangesContinueBtn = document.getElementById('levelChangesContinueButton');
 	
 	if (nextLevelBtn) {
 		nextLevelBtn.addEventListener('click', () => {
@@ -385,6 +386,13 @@ function setupGameScreenListeners() {
 			
 			showScreen('menuScreen');
 			populateLevelGrid(); // Refresh to show newly unlocked levels
+		});
+	}
+
+	if (levelChangesContinueBtn) {
+		levelChangesContinueBtn.addEventListener('click', () => {
+			AudioManager.playClick();
+			GameEngine.continueAfterLevelChanges();
 		});
 	}
 
@@ -529,11 +537,11 @@ function populateLevelGrid() {
 		const isCompleted = isUnlocked && PlayerManager.isLevelCompleted(selectedDifficulty, level, selectedMode);
 		
 		// Build pill content: number + indicator
-		let content = String(level);
+		let content = '<span class="level-number">' + level + '</span>';
 		if (!isUnlocked) {
 			btn.classList.add('locked');
 			btn.disabled = true;
-			content += '<span class="level-lock">🔒</span>';
+			content += '<span class="level-lock level-indicator">🔒</span>';
 		} else if (selectedMode === 'PUZZLE') {
 			// PUZZLE mode: show star rating
 			const stars = PlayerManager.getLevelStars(
@@ -543,13 +551,15 @@ function populateLevelGrid() {
 			if (stars > 0) {
 				btn.classList.add('completed');
 			}
-			const starStr = '<span class="level-stars">'
-				+ '★'.repeat(stars) + '<span class="star-empty">' + '☆'.repeat(3 - stars) + '</span>'
-				+ '</span>';
-			content += starStr;
+			if (stars > 0) {
+				const starStr = '<span class="level-stars level-indicator">'
+					+ '<span class="star star-filled">★</span>'.repeat(stars)
+					+ '</span>';
+				content += starStr;
+			}
 		} else if (isCompleted) {
 			btn.classList.add('completed');
-			content += '<span class="level-check">✓</span>';
+			content += '<span class="level-check level-indicator">✓</span>';
 		}
 		btn.innerHTML = content;
 		
@@ -921,65 +931,122 @@ function updateHighScoreDisplay() {
  * Set up player management UI
  */
 function setupPlayerManagement() {
-	const playerSelect = document.getElementById('playerSelect');
-	const addPlayerButton = document.getElementById('addPlayerButton');
-	const deletePlayerButton = document.getElementById('deletePlayerButton');
+	const playerPillToggle = document.getElementById('playerPillToggle');
+	const playerPillMenu = document.getElementById('playerPillMenu');
+	const playerCurrentName = document.getElementById('playerCurrentName');
+	const playerMenuList = document.getElementById('playerMenuList');
+	const playerMenuAdd = document.getElementById('playerMenuAdd');
+	if (!playerPillToggle || !playerPillMenu || !playerCurrentName || !playerMenuList || !playerMenuAdd) {
+		return;
+	}
 	
-	// Populate player dropdown
-	function populatePlayerSelect() {
+	// Populate player dropdown menu
+	function populatePlayerMenu() {
 		const players = PlayerManager.getPlayerNames();
 		const currentPlayer = PlayerManager.getCurrentPlayerName();
-		
-		playerSelect.innerHTML = '';
-		players.forEach(name => {
-			const option = document.createElement('option');
-			option.value = name;
-			option.textContent = name;
-			if (name === currentPlayer) {
-				option.selected = true;
+		playerCurrentName.textContent = currentPlayer;
+
+		playerMenuList.innerHTML = '';
+		players.forEach((name) => {
+			const item = document.createElement('div');
+			item.className = 'player-menu-item' + (name === currentPlayer ? ' active' : '');
+
+			const selectButton = document.createElement('button');
+			selectButton.type = 'button';
+			selectButton.className = 'player-menu-switch';
+			selectButton.textContent = name;
+			selectButton.addEventListener('click', () => {
+				switchPlayer(name);
+				closePlayerMenu();
+			});
+			item.appendChild(selectButton);
+
+			const canDelete = players.length > 1 && name !== 'Guest' && name !== currentPlayer;
+			if (canDelete) {
+				const deleteButton = document.createElement('button');
+				deleteButton.type = 'button';
+				deleteButton.className = 'player-menu-delete';
+				deleteButton.textContent = 'x';
+				deleteButton.title = `Delete ${name}`;
+				deleteButton.addEventListener('click', (event) => {
+					event.stopPropagation();
+					promptDeletePlayer(name);
+					closePlayerMenu();
+				});
+				item.appendChild(deleteButton);
 			}
-			playerSelect.appendChild(option);
+
+			playerMenuList.appendChild(item);
 		});
 		
 		// Update high score display
 		updateHighScoreDisplay();
 	}
-	
-	// Handle player selection change
-	playerSelect.addEventListener('change', (e) => {
-		const playerName = e.target.value;
-		if (PlayerManager.switchPlayer(playerName)) {
-			console.log(`Switched to player: ${playerName}`);
-			
-			// Identify player for analytics
-			const playerData = PlayerManager.getCurrentPlayerData();
-			AnalyticsManager.identifyPlayer(playerName, {
-				createdAt: playerData.createdAt,
-				gamesPlayed: playerData.stats.gamesPlayed,
-				highScore: playerData.stats.highScore
-			});
-			
-		// Load new player's settings and apply to AudioManager
+
+	function closePlayerMenu() {
+		playerPillMenu.classList.add('hidden');
+		playerPillToggle.setAttribute('aria-expanded', 'false');
+	}
+
+	function openPlayerMenu() {
+		playerPillMenu.classList.remove('hidden');
+		playerPillToggle.setAttribute('aria-expanded', 'true');
+	}
+
+	function switchPlayer(playerName) {
+		if (!PlayerManager.switchPlayer(playerName)) {
+			return;
+		}
+
+		console.log(`Switched to player: ${playerName}`);
+		const playerData = PlayerManager.getCurrentPlayerData();
+		AnalyticsManager.identifyPlayer(playerName, {
+			createdAt: playerData.createdAt,
+			gamesPlayed: playerData.stats.gamesPlayed,
+			highScore: playerData.stats.highScore
+		});
+
 		const settings = PlayerManager.getSettings();
 		AudioManager.setMasterVolume(settings.masterVolume);
 		AudioManager.setSFXVolume(settings.sfxVolume);
 		AudioManager.setMusicVolume(settings.musicVolume);
-		AudioManager.setMute(settings.isMuted);			updateHighScoreDisplay();
-			// Refresh level grid to show player's unlocked levels
-			populateLevelGrid();
-			// Refresh continue button for new player's save
-			updateContinueButton();
+		AudioManager.setMute(settings.isMuted);
+
+		updateHighScoreDisplay();
+		populateLevelGrid();
+		updateContinueButton();
+		populatePlayerMenu();
+	}
+	
+	playerPillToggle.addEventListener('click', () => {
+		if (playerPillMenu.classList.contains('hidden')) {
+			openPlayerMenu();
+		} else {
+			closePlayerMenu();
 		}
 	});
 	
-	// Handle add player button
+	document.addEventListener('click', (event) => {
+		if (!playerPillMenu.classList.contains('hidden') && !event.target.closest('.player-pill-container')) {
+			closePlayerMenu();
+		}
+	});
+
+	document.addEventListener('keydown', (event) => {
+		if (event.key === 'Escape') {
+			closePlayerMenu();
+		}
+	});
+
+	// Handle add player option
 	const addPlayerOverlay = document.getElementById('addPlayerOverlay');
 	const newPlayerNameInput = document.getElementById('newPlayerName');
 	const addPlayerError = document.getElementById('addPlayerError');
 	const confirmAddPlayerButton = document.getElementById('confirmAddPlayer');
 	const cancelAddPlayerButton = document.getElementById('cancelAddPlayer');
 	
-	addPlayerButton.addEventListener('click', () => {
+	playerMenuAdd.addEventListener('click', () => {
+		closePlayerMenu();
 		// Show overlay
 		addPlayerOverlay.classList.remove('hidden');
 		newPlayerNameInput.value = '';
@@ -1002,11 +1069,7 @@ function setupPlayerManagement() {
 				gamesPlayed: 0
 			});
 			AnalyticsManager.track('Player Created', { playerName });
-			populatePlayerSelect();
-			// Switch to new player
-			PlayerManager.switchPlayer(playerName);
-			playerSelect.value = playerName;
-			populateLevelGrid();
+			switchPlayer(playerName);
 			// Close overlay
 			addPlayerOverlay.classList.add('hidden');
 		} else {
@@ -1032,45 +1095,54 @@ function setupPlayerManagement() {
 	const confirmDeletePlayerButton = document.getElementById('confirmDeletePlayer');
 	const cancelDeletePlayerButton = document.getElementById('cancelDeletePlayer');
 	let playerToDelete = null;
-	
-	deletePlayerButton.addEventListener('click', () => {
-		const currentPlayer = PlayerManager.getCurrentPlayerName();
+
+	function promptDeletePlayer(playerName) {
 		const players = PlayerManager.getPlayerNames();
 		
-		// Can't delete if only one player or if current is Guest
+		// Can't delete if only one player
 		if (players.length <= 1) {
 			deletePlayerMessage.textContent = 'Cannot delete the last player!';
 			deletePlayerMessage.className = 'error-message';
 			deletePlayerOverlay.classList.remove('hidden');
 			confirmDeletePlayerButton.style.display = 'none';
 			cancelDeletePlayerButton.textContent = 'OK';
+			playerToDelete = null;
 			return;
 		}
 		
-		if (currentPlayer === 'Guest') {
+		if (playerName === 'Guest') {
 			deletePlayerMessage.textContent = 'Cannot delete the Guest player!';
 			deletePlayerMessage.className = 'error-message';
 			deletePlayerOverlay.classList.remove('hidden');
 			confirmDeletePlayerButton.style.display = 'none';
 			cancelDeletePlayerButton.textContent = 'OK';
+			playerToDelete = null;
+			return;
+		}
+
+		if (playerName === PlayerManager.getCurrentPlayerName()) {
+			deletePlayerMessage.textContent = 'Switch to another player before deleting this one.';
+			deletePlayerMessage.className = 'error-message';
+			deletePlayerOverlay.classList.remove('hidden');
+			confirmDeletePlayerButton.style.display = 'none';
+			cancelDeletePlayerButton.textContent = 'OK';
+			playerToDelete = null;
 			return;
 		}
 		
 		// Show confirmation
-		playerToDelete = currentPlayer;
-		deletePlayerMessage.textContent = `Are you sure you want to delete player "${currentPlayer}"? This cannot be undone.`;
+		playerToDelete = playerName;
+		deletePlayerMessage.textContent = `Are you sure you want to delete player "${playerName}"? This cannot be undone.`;
 		deletePlayerMessage.className = 'warning-message';
 		deletePlayerOverlay.classList.remove('hidden');
 		confirmDeletePlayerButton.style.display = '';
 		cancelDeletePlayerButton.textContent = 'Cancel';
-	});
+	}
 	
 	confirmDeletePlayerButton.addEventListener('click', () => {
 		if (playerToDelete) {
-			// Switch to Guest before deleting
-			PlayerManager.switchPlayer('Guest');
 			if (PlayerManager.deletePlayer(playerToDelete)) {
-				populatePlayerSelect();
+				populatePlayerMenu();
 				populateLevelGrid();
 			}
 			playerToDelete = null;
@@ -1084,5 +1156,5 @@ function setupPlayerManagement() {
 	});
 	
 	// Initial population
-	populatePlayerSelect();
+	populatePlayerMenu();
 }

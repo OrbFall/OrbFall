@@ -45,6 +45,12 @@ class PieceFactoryClass {
 		this._rng = null;
 		// Painter spawn multiplier from modifiers (1.0 = normal)
 		this.painterSpawnMultiplier = 1.0;
+		// Optional explicit progression overrides
+		this.progressionOverrides = {
+			colors: null,
+			shapes: null,
+			specialTypes: null
+		};
 	}
 
 	/**
@@ -98,6 +104,34 @@ class PieceFactoryClass {
 		this.piecesSinceLastExplosive = 0;
 		this.forceExplosiveNext = false;
 		this._rng = null;
+		this.clearProgressionOverrides();
+	}
+
+	/**
+	 * Apply explicit progression overrides for active content.
+	 * @param {{colors?: Array<String>|null, shapes?: Array<String>|null, specialTypes?: Array<String>|null}} overrides
+	 */
+	setProgressionOverrides(overrides = {}) {
+		this.progressionOverrides.colors = Array.isArray(overrides.colors) && overrides.colors.length > 0
+			? [...overrides.colors]
+			: null;
+		this.progressionOverrides.shapes = Array.isArray(overrides.shapes) && overrides.shapes.length > 0
+			? [...overrides.shapes]
+			: null;
+		this.progressionOverrides.specialTypes = Array.isArray(overrides.specialTypes) && overrides.specialTypes.length > 0
+			? [...overrides.specialTypes]
+			: null;
+		this.shapeBag = [];
+		this.specialBag = [];
+	}
+
+	/**
+	 * Clear explicit progression overrides.
+	 */
+	clearProgressionOverrides() {
+		this.progressionOverrides.colors = null;
+		this.progressionOverrides.shapes = null;
+		this.progressionOverrides.specialTypes = null;
 	}
 	
 	/**
@@ -106,6 +140,10 @@ class PieceFactoryClass {
 	 * @returns {Array<String>} Array of color hex codes
 	 */
 	getAvailableColors(level) {
+		if (Array.isArray(this.progressionOverrides.colors) && this.progressionOverrides.colors.length > 0) {
+			return [...this.progressionOverrides.colors];
+		}
+
 		// Determine which color unlock tier applies
 		let colorKey = 'level1';
 		
@@ -135,6 +173,10 @@ class PieceFactoryClass {
 	 * @private
 	 */
 	_getUnlockedSpecialTypes(level) {
+		if (Array.isArray(this.progressionOverrides.specialTypes) && this.progressionOverrides.specialTypes.length > 0) {
+			return [...this.progressionOverrides.specialTypes];
+		}
+
 		const unlocks = ConfigManager.get('specialBalls.featureUnlocks', null);
 		const allTypes = [
 			CONSTANTS.BALL_TYPES.EXPLODING,
@@ -629,6 +671,13 @@ class PieceFactoryClass {
 	 */
 	_getShapePool() {
 		const includeSingle = ConfigManager.get('pieceBag.includeSingle', false);
+		if (Array.isArray(this.progressionOverrides.shapes) && this.progressionOverrides.shapes.length > 0) {
+			let overrideShapes = [...this.progressionOverrides.shapes];
+			if (includeSingle && !overrideShapes.includes(CONSTANTS.PIECE_TYPES.SINGLE)) {
+				overrideShapes = [...overrideShapes, CONSTANTS.PIECE_TYPES.SINGLE];
+			}
+			return overrideShapes;
+		}
 		
 		// Check for difficulty-based shape unlocks
 		const difficultyKey = `shapeUnlocks.difficulty${this.currentDifficulty}`;

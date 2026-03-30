@@ -361,34 +361,9 @@ testSuite.tests.push({
 	}
 });
 
-// Test: _getUnlockedSpecialTypes returns only PAINTER_HORIZONTAL at level 3
+// Test: _getUnlockedSpecialTypes returns only PAINTER_HORIZONTAL at level 5
 testSuite.tests.push({
 	name: 'featureUnlocks - Level 3 unlocks only PAINTER_HORIZONTAL',
-	async run() {
-		await ConfigManager.loadConfig();
-		const unlocked = PieceFactory._getUnlockedSpecialTypes(3);
-
-		if (!unlocked.includes(CONSTANTS.BALL_TYPES.PAINTER_HORIZONTAL)) {
-			throw new Error('PAINTER_HORIZONTAL should be unlocked at level 3');
-		}
-		if (unlocked.includes(CONSTANTS.BALL_TYPES.PAINTER_VERTICAL)) {
-			throw new Error('PAINTER_VERTICAL should NOT be unlocked at level 3');
-		}
-		if (unlocked.includes(CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NE)) {
-			throw new Error('PAINTER_DIAGONAL_NE should NOT be unlocked at level 3');
-		}
-		if (unlocked.includes(CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NW)) {
-			throw new Error('PAINTER_DIAGONAL_NW should NOT be unlocked at level 3');
-		}
-		if (unlocked.includes(CONSTANTS.BALL_TYPES.EXPLODING)) {
-			throw new Error('EXPLODING should NOT be unlocked at level 3');
-		}
-	}
-});
-
-// Test: _getUnlockedSpecialTypes returns H+V at level 5
-testSuite.tests.push({
-	name: 'featureUnlocks - Level 5 unlocks PAINTER_HORIZONTAL and PAINTER_VERTICAL',
 	async run() {
 		await ConfigManager.loadConfig();
 		const unlocked = PieceFactory._getUnlockedSpecialTypes(5);
@@ -396,11 +371,14 @@ testSuite.tests.push({
 		if (!unlocked.includes(CONSTANTS.BALL_TYPES.PAINTER_HORIZONTAL)) {
 			throw new Error('PAINTER_HORIZONTAL should be unlocked at level 5');
 		}
-		if (!unlocked.includes(CONSTANTS.BALL_TYPES.PAINTER_VERTICAL)) {
-			throw new Error('PAINTER_VERTICAL should be unlocked at level 5');
+		if (unlocked.includes(CONSTANTS.BALL_TYPES.PAINTER_VERTICAL)) {
+			throw new Error('PAINTER_VERTICAL should NOT be unlocked at level 5');
 		}
 		if (unlocked.includes(CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NE)) {
 			throw new Error('PAINTER_DIAGONAL_NE should NOT be unlocked at level 5');
+		}
+		if (unlocked.includes(CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NW)) {
+			throw new Error('PAINTER_DIAGONAL_NW should NOT be unlocked at level 5');
 		}
 		if (unlocked.includes(CONSTANTS.BALL_TYPES.EXPLODING)) {
 			throw new Error('EXPLODING should NOT be unlocked at level 5');
@@ -408,12 +386,60 @@ testSuite.tests.push({
 	}
 });
 
-// Test: _getUnlockedSpecialTypes returns H+V+both diagonals at level 7
+// Test: _getUnlockedSpecialTypes returns H+V at level 9
+testSuite.tests.push({
+	name: 'featureUnlocks - Level 5 unlocks PAINTER_HORIZONTAL and PAINTER_VERTICAL',
+	async run() {
+		await ConfigManager.loadConfig();
+		const unlocked = PieceFactory._getUnlockedSpecialTypes(9);
+
+		if (!unlocked.includes(CONSTANTS.BALL_TYPES.PAINTER_HORIZONTAL)) {
+			throw new Error('PAINTER_HORIZONTAL should be unlocked at level 9');
+		}
+		if (!unlocked.includes(CONSTANTS.BALL_TYPES.PAINTER_VERTICAL)) {
+			throw new Error('PAINTER_VERTICAL should be unlocked at level 9');
+		}
+		if (unlocked.includes(CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NE)) {
+			throw new Error('PAINTER_DIAGONAL_NE should NOT be unlocked at level 9');
+		}
+		if (unlocked.includes(CONSTANTS.BALL_TYPES.EXPLODING)) {
+			throw new Error('EXPLODING should NOT be unlocked at level 9');
+		}
+	}
+});
+
+// Test: _getUnlockedSpecialTypes returns H+V+NE at level 13
 testSuite.tests.push({
 	name: 'featureUnlocks - Level 7 unlocks all painters, not yet EXPLODING',
 	async run() {
 		await ConfigManager.loadConfig();
-		const unlocked = PieceFactory._getUnlockedSpecialTypes(7);
+		const unlocked = PieceFactory._getUnlockedSpecialTypes(13);
+
+		const painters = [
+			CONSTANTS.BALL_TYPES.PAINTER_HORIZONTAL,
+			CONSTANTS.BALL_TYPES.PAINTER_VERTICAL,
+			CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NE
+		];
+		for (const type of painters) {
+			if (!unlocked.includes(type)) {
+				throw new Error(`${type} should be unlocked at level 13`);
+			}
+		}
+		if (unlocked.includes(CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NW)) {
+			throw new Error('PAINTER_DIAGONAL_NW should NOT be unlocked at level 13');
+		}
+		if (unlocked.includes(CONSTANTS.BALL_TYPES.EXPLODING)) {
+			throw new Error('EXPLODING should NOT be unlocked at level 13');
+		}
+	}
+});
+
+// Test: _getUnlockedSpecialTypes returns all painters at level 14
+testSuite.tests.push({
+	name: 'featureUnlocks - Level 14 unlocks all painters, not yet EXPLODING',
+	async run() {
+		await ConfigManager.loadConfig();
+		const unlocked = PieceFactory._getUnlockedSpecialTypes(14);
 
 		const painters = [
 			CONSTANTS.BALL_TYPES.PAINTER_HORIZONTAL,
@@ -423,21 +449,21 @@ testSuite.tests.push({
 		];
 		for (const type of painters) {
 			if (!unlocked.includes(type)) {
-				throw new Error(`${type} should be unlocked at level 7`);
+				throw new Error(`${type} should be unlocked at level 14`);
 			}
 		}
 		if (unlocked.includes(CONSTANTS.BALL_TYPES.EXPLODING)) {
-			throw new Error('EXPLODING should NOT be unlocked at level 7');
+			throw new Error('EXPLODING should NOT be unlocked at level 14');
 		}
 	}
 });
 
-// Test: _getUnlockedSpecialTypes returns all types at level 9
+// Test: _getUnlockedSpecialTypes returns all types at level 19
 testSuite.tests.push({
 	name: 'featureUnlocks - Level 9 unlocks all special types including EXPLODING',
 	async run() {
 		await ConfigManager.loadConfig();
-		const unlocked = PieceFactory._getUnlockedSpecialTypes(9);
+		const unlocked = PieceFactory._getUnlockedSpecialTypes(19);
 
 		const allTypes = [
 			CONSTANTS.BALL_TYPES.EXPLODING,
@@ -448,11 +474,11 @@ testSuite.tests.push({
 		];
 		for (const type of allTypes) {
 			if (!unlocked.includes(type)) {
-				throw new Error(`${type} should be unlocked at level 9`);
+				throw new Error(`${type} should be unlocked at level 19`);
 			}
 		}
 		if (unlocked.length !== 5) {
-			throw new Error(`Expected 5 unlocked types at level 9, got ${unlocked.length}`);
+			throw new Error(`Expected 5 unlocked types at level 19, got ${unlocked.length}`);
 		}
 	}
 });
@@ -505,7 +531,7 @@ testSuite.tests.push({
 	}
 });
 
-// Test: generatePiece CAN produce PAINTER_HORIZONTAL at level 3 when spawn rate = 100%
+// Test: generatePiece CAN produce PAINTER_HORIZONTAL at level 5 when spawn rate = 100%
 testSuite.tests.push({
 	name: 'featureUnlocks - PAINTER_HORIZONTAL spawns at level 3 (random mode, rate=100%)',
 	async run() {
@@ -520,7 +546,7 @@ testSuite.tests.push({
 		PieceFactory.reset();
 		let found = false;
 		for (let i = 0; i < 30; i++) {
-			const piece = PieceFactory.generatePiece(3, 1);
+			const piece = PieceFactory.generatePiece(5, 1);
 			if (piece) {
 				for (const ball of piece.getBalls()) {
 					if (ball.getType() === CONSTANTS.BALL_TYPES.PAINTER_HORIZONTAL) {
@@ -536,7 +562,7 @@ testSuite.tests.push({
 		ConfigManager.config.specialBalls.blocking.minPieceBeforeSpawn.difficulty1 = 50;
 
 		if (!found) {
-			throw new Error('PAINTER_HORIZONTAL should have spawned at level 3 with 100% rate');
+			throw new Error('PAINTER_HORIZONTAL should have spawned at level 5 with 100% rate');
 		}
 	}
 });
@@ -624,7 +650,7 @@ testSuite.tests.push({
 	}
 });
 
-// Test: _pickIntervalSpecialType never returns locked type for level 3
+// Test: _pickIntervalSpecialType never returns locked type for level 5
 testSuite.tests.push({
 	name: 'featureUnlocks - _pickIntervalSpecialType only returns PAINTER_HORIZONTAL at level 3',
 	async run() {
@@ -638,12 +664,12 @@ testSuite.tests.push({
 		];
 
 		for (let i = 0; i < 50; i++) {
-			const result = PieceFactory._pickIntervalSpecialType(3);
+			const result = PieceFactory._pickIntervalSpecialType(5);
 			if (result === null) {
-				throw new Error('_pickIntervalSpecialType should not return null at level 3');
+				throw new Error('_pickIntervalSpecialType should not return null at level 5');
 			}
 			if (forbidden.includes(result)) {
-				throw new Error(`_pickIntervalSpecialType returned locked type "${result}" at level 3`);
+				throw new Error(`_pickIntervalSpecialType returned locked type "${result}" at level 5`);
 			}
 		}
 	}
@@ -745,7 +771,7 @@ testSuite.tests.push({
 		PieceFactory.currentDifficulty = 1;
 		PieceFactory.piecesSinceLastExplosive = 15; // D1 threshold = 15
 		
-		const result = PieceFactory._checkPityTimer(9); // level 9 unlocks EXPLODING
+		const result = PieceFactory._checkPityTimer(19); // level 19 unlocks EXPLODING
 		
 		if (result !== true) {
 			throw new Error('Expected true at threshold with EXPLODING unlocked');
@@ -824,7 +850,7 @@ testSuite.tests.push({
 		PieceFactory.reset();
 		PieceFactory.forceExplosiveNext = true;
 		
-		const type = PieceFactory._pickIntervalSpecialType(9); // level 9 has EXPLODING
+		const type = PieceFactory._pickIntervalSpecialType(19); // level 19 has EXPLODING
 		
 		if (type !== CONSTANTS.BALL_TYPES.EXPLODING) {
 			throw new Error(`Expected EXPLODING, got ${type}`);

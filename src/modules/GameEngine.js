@@ -83,6 +83,12 @@ class GameEngineClass {
 		
 		// Guard to prevent concurrent cascade processing
 		this.isHandlingMatches = false;
+
+		// Level briefing visibility preferences (mode+difficulty+level keys)
+		this.levelBriefingStorageKey = 'orbfall_hiddenLevelBriefings';
+		this.hiddenLevelBriefings = this._loadHiddenLevelBriefings();
+		this.pendingLevelChangesOverlay = false;
+		this.activeProgressionState = null;
 	}
 	
 	/**
@@ -260,8 +266,10 @@ class GameEngineClass {
 			const deltaTime = touchEndTime - touchStartTime;
 			
 			// Check if it's a swipe (fast movement) vs tap (quick touch)
-			const isSwipeDown = deltaY > 50 && deltaTime < 300;
-			const isSwipeUp = deltaY < -50 && deltaTime < 300;
+			const isSwipeDown = deltaY > 50 && Math.abs(deltaX) < 50 && deltaTime < 300;
+			const isSwipeUp = deltaY < -50 && Math.abs(deltaX) < 50 && deltaTime < 300;
+			const isSwipeLeft = deltaX > 50 && Math.abs(deltaY) < 50 && deltaTime < 300;
+			const isSwipeRight = deltaX < -50 && Math.abs(deltaY) < 50 && deltaTime < 300;
 			const isTap = Math.abs(deltaX) < 20 && Math.abs(deltaY) < 20 && deltaTime < 300;
 			
 			if (isSwipeDown) {
@@ -270,6 +278,12 @@ class GameEngineClass {
 			} else if (isSwipeUp) {
 				// Swipe up - rotate
 				InputHandler.triggerAction('rotate');
+			} else if (isSwipeLeft) {
+				// Swipe left - move piece left
+				InputHandler.triggerAction('moveLeft');
+			} else if (isSwipeRight) {
+				// Swipe right - move piece right
+				InputHandler.triggerAction('moveRight');
 			} else if (isTap) {
 				// Tap - move left/right based on which side of canvas
 				const rect = canvas.getBoundingClientRect();
@@ -595,6 +609,7 @@ class GameEngineClass {
 	 */
 	start(difficulty, level, mode = 'CLASSIC') {
 		const isInitialized = this.isInitialized;
+		const previousProfile = this._getDifficultyProfile();
 		
 		// Check if initialized
 		if (!isInitialized) {
@@ -610,6 +625,9 @@ class GameEngineClass {
 		this.difficulty = difficulty || 1;
 		this.gameMode = mode || 'CLASSIC';
 		this.modeConfig = CONSTANTS.GAME_MODE_CONFIG[this.gameMode];
+		this.activeProgressionState = ConfigManager.getProgressionState(this.gameMode, this.difficulty, this.level);
+		this.pendingLevelChangesOverlay = false;
+		this._hideLevelChangesOverlay();
 		
 		// Clear any existing Zen save — starting fresh
 		this.clearZenState();
@@ -635,9 +653,6 @@ class GameEngineClass {
 			LevelManager.stopTimer();
 		}
 		
-		// Update available colors display
-		this._updateAvailableColorsDisplay();
-		
 		// Clear grid
 		this.grid.clear();
 		
@@ -651,6 +666,15 @@ class GameEngineClass {
 		
 		// Reset PieceFactory
 		PieceFactory.reset();
+		if (this.activeProgressionState) {
+			PieceFactory.setProgressionOverrides({
+				colors: this.activeProgressionState.colors,
+				shapes: this.activeProgressionState.pieces,
+				specialTypes: this.activeProgressionState.specials
+			});
+		} else {
+			PieceFactory.clearProgressionOverrides();
+		}
 		
 		// PUZZLE mode: seed the RNG for deterministic piece sequences
 		if (this.gameMode === 'PUZZLE') {
@@ -678,17 +702,18 @@ class GameEngineClass {
 		// Initialize HintManager for this difficulty
 		HintManager.initialize(this.difficulty);
 		
-		// Set drop speed based on difficulty
-		this.dropInterval = Math.max(200, 1000 - (difficulty * 150));
-		this.basedropInterval = this.dropInterval;
-		
 		// Resolve per-mode+difficulty modifiers (lockDelay, diagonalScoreMultiplier, painterSpawnMultiplier)
 		const modifiers = ConfigManager.getModifiers(this.gameMode, this.difficulty);
-		this.lockDelay = modifiers.lockDelay;
+		this.dropInterval = this.activeProgressionState?.dropIntervalMs ?? Math.max(200, 1000 - (difficulty * 150));
+		this.basedropInterval = this.dropInterval;
+		this.lockDelay = this.activeProgressionState?.lockDelayMs ?? modifiers.lockDelay;
 		
 		// Pass modifier values to subsystems
-		ScoreManager.setDiagonalMultiplier(modifiers.diagonalScoreMultiplier);
-		PieceFactory.setPainterSpawnMultiplier(modifiers.painterSpawnMultiplier);
+		ScoreManager.setDiagonalMultiplier(this.activeProgressionState?.diagonalScoreMultiplier ?? modifiers.diagonalScoreMultiplier);
+		PieceFactory.setPainterSpawnMultiplier(this.activeProgressionState?.painterSpawnMultiplier ?? modifiers.painterSpawnMultiplier);
+
+		// Update available colors display
+		this._updateAvailableColorsDisplay();
 		
 		// Generate pieces (in debug mode, this will be async via callback)
 		if (DebugMode.isEnabled()) {
@@ -750,9 +775,35 @@ class GameEngineClass {
 		
 		// Initial render
 		this.render();
-		
-		// Start game loop
-		this._gameLoop();
+
+		// Show a level briefing before the loop starts unless hidden for this level.
+		const showingChanges = this._maybeShowLevelChangesOverlay(previousProfile);
+		if (!showingChanges) {
+			// Start game loop
+			this._gameLoop();
+		}
+	}
+
+	/**
+	 * Continue gameplay after dismissing the level changes overlay.
+	 * @returns {void}
+	 */
+	continueAfterLevelChanges() {
+		if (!this.pendingLevelChangesOverlay) {
+			return;
+		}
+
+		const hideForThisLevel = document.getElementById('hideLevelChangesCheckbox')?.checked === true;
+		this._setCurrentLevelBriefingHidden(hideForThisLevel);
+
+		this.pendingLevelChangesOverlay = false;
+		this._hideLevelChangesOverlay();
+
+		if (this.state === CONSTANTS.GAME_STATES.PAUSED) {
+			this.state = CONSTANTS.GAME_STATES.PLAYING;
+			this.lastUpdateTime = performance.now();
+			this._gameLoop();
+		}
 	}
 	
 	/**
@@ -901,11 +952,11 @@ class GameEngineClass {
 	 */
 	_getSpecialIndicatorMeta(specialType) {
 		const metaMap = {
-			[CONSTANTS.BALL_TYPES.EXPLODING]: { label: 'Exploding', className: 'exploding' },
-			[CONSTANTS.BALL_TYPES.PAINTER_HORIZONTAL]: { label: 'Painter H', className: 'painter-h' },
-			[CONSTANTS.BALL_TYPES.PAINTER_VERTICAL]: { label: 'Painter V', className: 'painter-v' },
-			[CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NE]: { label: 'Painter DNE', className: 'painter-dne' },
-			[CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NW]: { label: 'Painter DNW', className: 'painter-dnw' }
+			[CONSTANTS.BALL_TYPES.EXPLODING]: { label: 'Exploding Orb', className: 'exploding' },
+			[CONSTANTS.BALL_TYPES.PAINTER_HORIZONTAL]: { label: 'Horizontal Painter', className: 'painter-h' },
+			[CONSTANTS.BALL_TYPES.PAINTER_VERTICAL]: { label: 'Vertical Painter', className: 'painter-v' },
+			[CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NE]: { label: 'Diagonal Painter (NE-SW)', className: 'painter-dne' },
+			[CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NW]: { label: 'Diagonal Painter (NW-SE)', className: 'painter-dnw' }
 		};
 		return metaMap[specialType] || { label: 'Special', className: 'pending' };
 	}
@@ -1916,8 +1967,18 @@ class GameEngineClass {
 		this.level = state.level;
 		this.gameMode = 'ZEN';
 		this.modeConfig = CONSTANTS.GAME_MODE_CONFIG['ZEN'];
+		this.activeProgressionState = ConfigManager.getProgressionState('ZEN', this.difficulty, this.level);
 		
 		PieceFactory.setGameMode('ZEN');
+		if (this.activeProgressionState) {
+			PieceFactory.setProgressionOverrides({
+				colors: this.activeProgressionState.colors,
+				shapes: this.activeProgressionState.pieces,
+				specialTypes: this.activeProgressionState.specials
+			});
+		} else {
+			PieceFactory.clearProgressionOverrides();
+		}
 		LevelManager.setLevel(this.level);
 		LevelManager.stopTimer();
 		
@@ -1944,14 +2005,14 @@ class GameEngineClass {
 		PieceFactory.piecesSinceLastExplosive = state.piecesSinceLastExplosive || 0;
 		
 		// Restore drop speed
-		this.dropInterval = state.dropInterval || Math.max(200, 1000 - (this.difficulty * 150));
+		this.dropInterval = state.dropInterval || this.activeProgressionState?.dropIntervalMs || Math.max(200, 1000 - (this.difficulty * 150));
 		this.basedropInterval = this.dropInterval;
 		
 		// Resolve per-mode+difficulty modifiers for restored game
 		const modifiers = ConfigManager.getModifiers('ZEN', this.difficulty);
-		this.lockDelay = modifiers.lockDelay;
-		ScoreManager.setDiagonalMultiplier(modifiers.diagonalScoreMultiplier);
-		PieceFactory.setPainterSpawnMultiplier(modifiers.painterSpawnMultiplier);
+		this.lockDelay = this.activeProgressionState?.lockDelayMs ?? modifiers.lockDelay;
+		ScoreManager.setDiagonalMultiplier(this.activeProgressionState?.diagonalScoreMultiplier ?? modifiers.diagonalScoreMultiplier);
+		PieceFactory.setPainterSpawnMultiplier(this.activeProgressionState?.painterSpawnMultiplier ?? modifiers.painterSpawnMultiplier);
 		
 		// Reset timers
 		this.dropTimer = 0;
@@ -2452,6 +2513,629 @@ class GameEngineClass {
 				item.style.transform = 'translateY(0)';
 			}, 150 * i);
 		});
+	}
+
+	/**
+	 * Build a profile snapshot of gameplay-affecting settings for comparisons.
+	 * @returns {{mode: String, difficulty: Number, dropInterval: Number, lockDelay: Number, diagonalScoreMultiplier: Number, painterSpawnMultiplier: Number, colorCount: Number, colors: Array<String>, specialTypes: Array<String>, shapes: Array<String>} | null}
+	 * @private
+	 */
+	_getDifficultyProfile() {
+		if (!this.gameMode || !this.difficulty) {
+			return null;
+		}
+
+		const progressionState = ConfigManager.getProgressionState(this.gameMode, this.difficulty, this.level || 1);
+		if (progressionState) {
+			return {
+				mode: this.gameMode,
+				difficulty: this.difficulty,
+				dropInterval: progressionState.dropIntervalMs,
+				lockDelay: progressionState.lockDelayMs,
+				diagonalScoreMultiplier: progressionState.diagonalScoreMultiplier,
+				painterSpawnMultiplier: progressionState.painterSpawnMultiplier,
+				colorCount: progressionState.colors.length,
+				colors: [...progressionState.colors],
+				specialTypes: [...progressionState.specials],
+				shapes: [...progressionState.pieces]
+			};
+		}
+
+		const modifiers = ConfigManager.getModifiers(this.gameMode, this.difficulty);
+		const colors = PieceFactory.getAvailableColors(this.level || 1);
+		const specialTypes = PieceFactory.getUnlockedSpecialTypes(this.level || 1);
+		const shapes = ConfigManager.get(
+			`shapeUnlocks.difficulty${this.difficulty}`,
+			[CONSTANTS.PIECE_TYPES.I, CONSTANTS.PIECE_TYPES.O, CONSTANTS.PIECE_TYPES.T, CONSTANTS.PIECE_TYPES.L, CONSTANTS.PIECE_TYPES.J, CONSTANTS.PIECE_TYPES.S, CONSTANTS.PIECE_TYPES.Z]
+		);
+
+		return {
+			mode: this.gameMode,
+			difficulty: this.difficulty,
+			dropInterval: Math.max(200, 1000 - (this.difficulty * 150)),
+			lockDelay: modifiers.lockDelay,
+			diagonalScoreMultiplier: modifiers.diagonalScoreMultiplier,
+			painterSpawnMultiplier: modifiers.painterSpawnMultiplier,
+			colorCount: colors.length,
+			colors,
+			specialTypes,
+			shapes
+		};
+	}
+
+	/**
+	 * Show level/mode progression briefing if this level introduces meaningful changes.
+	 * @param {Object|null} previousProfile - Profile before this start call
+	 * @returns {Boolean} True when the overlay was shown
+	 * @private
+	 */
+	_maybeShowLevelChangesOverlay(previousProfile) {
+		if (this._isCurrentLevelBriefingHidden()) {
+			return false;
+		}
+
+		const currentProfile = this._getDifficultyProfile();
+		if (!currentProfile) {
+			return false;
+		}
+
+		const isLevelOneModeIntro = this.level === 1;
+		const baselineProfile = previousProfile
+			&& previousProfile.mode === this.gameMode
+			&& previousProfile.difficulty === this.difficulty
+			? previousProfile
+			: this._buildProfileForLevel(Math.max(1, this.level - 1), this.difficulty, this.gameMode);
+
+		const entries = this._buildLevelChangeEntries(currentProfile, baselineProfile, isLevelOneModeIntro, true);
+		if (entries.length === 0) {
+			return false;
+		}
+
+		const rendered = this._renderLevelChangesOverlay(entries, isLevelOneModeIntro);
+		if (!rendered) {
+			return false;
+		}
+
+		this.pendingLevelChangesOverlay = true;
+		this.state = CONSTANTS.GAME_STATES.PAUSED;
+		return true;
+	}
+
+	/**
+	 * Build a profile for any level/difficulty/mode tuple.
+	 * @param {Number} level
+	 * @param {Number} difficulty
+	 * @param {String} mode
+	 * @returns {Object}
+	 * @private
+	 */
+	_buildProfileForLevel(level, difficulty, mode) {
+		const progressionState = ConfigManager.getProgressionState(mode, difficulty, level);
+		if (progressionState) {
+			return {
+				mode,
+				difficulty,
+				dropInterval: progressionState.dropIntervalMs,
+				lockDelay: progressionState.lockDelayMs,
+				diagonalScoreMultiplier: progressionState.diagonalScoreMultiplier,
+				painterSpawnMultiplier: progressionState.painterSpawnMultiplier,
+				colorCount: progressionState.colors.length,
+				colors: [...progressionState.colors],
+				specialTypes: [...progressionState.specials],
+				shapes: [...progressionState.pieces]
+			};
+		}
+
+		const modifiers = ConfigManager.getModifiers(mode, difficulty);
+		const colors = PieceFactory.getAvailableColors(level);
+		const specialTypes = PieceFactory.getUnlockedSpecialTypes(level);
+		const shapes = ConfigManager.get(
+			`shapeUnlocks.difficulty${difficulty}`,
+			[CONSTANTS.PIECE_TYPES.I, CONSTANTS.PIECE_TYPES.O, CONSTANTS.PIECE_TYPES.T, CONSTANTS.PIECE_TYPES.L, CONSTANTS.PIECE_TYPES.J, CONSTANTS.PIECE_TYPES.S, CONSTANTS.PIECE_TYPES.Z]
+		);
+
+		return {
+			mode,
+			difficulty,
+			dropInterval: Math.max(200, 1000 - (difficulty * 150)),
+			lockDelay: modifiers.lockDelay,
+			diagonalScoreMultiplier: modifiers.diagonalScoreMultiplier,
+			painterSpawnMultiplier: modifiers.painterSpawnMultiplier,
+			colorCount: colors.length,
+			colors,
+			specialTypes,
+			shapes
+		};
+	}
+
+	/**
+	 * Create overlay entries describing gameplay changes.
+	 * @param {Object} currentProfile
+	 * @param {Object|null} previousProfile
+	 * @param {Boolean} isLevelOneModeIntro
+	 * @param {Boolean} forceShow - Include a concise snapshot even with no deltas
+	 * @returns {Array<Object>}
+	 * @private
+	 */
+	_buildLevelChangeEntries(currentProfile, previousProfile, isLevelOneModeIntro, forceShow = false) {
+		const entries = [];
+		const modeName = this.modeConfig?.name || this.gameMode;
+		const colorNames = currentProfile.colors.map(color => this._getColorDisplayName(color));
+		const previousColors = new Set(previousProfile?.colors || []);
+		const newColors = currentProfile.colors.filter(color => !previousColors.has(color));
+		const newColorNames = newColors.map(color => this._getColorDisplayName(color));
+		const prevShapes = new Set(previousProfile?.shapes || []);
+		const newShapes = currentProfile.shapes.filter(shape => !prevShapes.has(shape));
+		const previousSpecialSet = new Set(previousProfile?.specialTypes || []);
+		const newSpecialTypes = currentProfile.specialTypes.filter(type => !previousSpecialSet.has(type));
+		const newSpecialNames = newSpecialTypes.map(type => this._getSpecialMetaForChanges(type).label);
+		const specialDescriptions = this._buildSpecialAvailabilityDescription(currentProfile.specialTypes);
+
+		if (isLevelOneModeIntro) {
+			entries.push({
+				title: `${modeName} Overview`,
+				description: this.modeConfig?.description || 'Complete the objective and survive the pressure.',
+				iconClass: 'mode'
+			});
+		}
+
+		entries.push({
+			title: 'Available Colors',
+			description: this._buildAvailabilityDescription(
+				`Colors in play: ${this._formatNaturalList(colorNames)}.`,
+				newColorNames.length > 0 ? `New this level: ${this._formatNaturalList(newColorNames)}.` : ''
+			),
+			colorChips: currentProfile.colors
+		});
+
+		entries.push({
+			title: 'Available Pieces',
+			description: this._buildAvailabilityDescription(
+				`${currentProfile.shapes.length} piece layouts are in rotation.`,
+				newShapes.length > 0 ? `${newShapes.length} new layout${newShapes.length === 1 ? ' is' : 's are'} highlighted above.` : ''
+			),
+			pieceShapes: currentProfile.shapes,
+			newPieceShapes: newShapes,
+			iconClass: 'shape'
+		});
+
+		entries.push({
+			title: 'Available Special Orbs',
+			description: currentProfile.specialTypes.length > 0
+				? specialDescriptions
+				: 'No special orbs are active yet. New specials unlock in later levels.',
+			specialTypes: currentProfile.specialTypes
+		});
+
+		entries.push({
+			title: 'What Changed From Last Level',
+			description: this._describeLevelDelta(currentProfile, previousProfile, {
+				newColorNames,
+				newShapeCount: newShapes.length,
+				newSpecialNames,
+				isLevelOneModeIntro
+			}),
+			iconClass: 'speed'
+		});
+
+		return entries.slice(0, 5);
+	}
+
+	/**
+	 * Join a base sentence and optional update sentence.
+	 * @param {String} baseText
+	 * @param {String} updateText
+	 * @returns {String}
+	 * @private
+	 */
+	_buildAvailabilityDescription(baseText, updateText = '') {
+		return updateText ? `${baseText} ${updateText}` : baseText;
+	}
+
+	/**
+	 * Build player-facing special orb descriptions with grouped painter behavior.
+	 * @param {Array<String>} specialTypes
+	 * @returns {String}
+	 * @private
+	 */
+	_buildSpecialAvailabilityDescription(specialTypes) {
+		const painterTypes = new Set([
+			CONSTANTS.BALL_TYPES.PAINTER_HORIZONTAL,
+			CONSTANTS.BALL_TYPES.PAINTER_VERTICAL,
+			CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NE,
+			CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NW
+		]);
+
+		const hasPainter = specialTypes.some(type => painterTypes.has(type));
+		const descriptions = [];
+
+		if (hasPainter) {
+			descriptions.push('Painter Orbs paint in the direction shown on the orb icon when triggered in a match.');
+		}
+
+		specialTypes.forEach(type => {
+			if (painterTypes.has(type)) {
+				return;
+			}
+			const meta = this._getSpecialMetaForChanges(type);
+			descriptions.push(`${meta.label} ${meta.effect}.`);
+		});
+
+		return descriptions.join(' ');
+	}
+
+	/**
+	 * Create a player-facing summary of what changed from the last level.
+	 * @param {Object} currentProfile
+	 * @param {Object|null} previousProfile
+	 * @param {Object} details
+	 * @returns {String}
+	 * @private
+	 */
+	_describeLevelDelta(currentProfile, previousProfile, details) {
+		if (details.isLevelOneModeIntro) {
+			const baseMessages = ['This is the starting ruleset for this mode and difficulty.'];
+			if (this.modeConfig?.risingBlocks) {
+				const seconds = Math.round((this.modeConfig.risingInterval || 0) / 1000);
+				baseMessages.push(`Rows rise every ${seconds} seconds in this mode.`);
+			}
+			return baseMessages.join(' ');
+		}
+
+		const changes = [];
+
+		if (previousProfile && currentProfile.dropInterval !== previousProfile.dropInterval) {
+			const percent = this._calculatePercentChange(previousProfile.dropInterval, currentProfile.dropInterval);
+			changes.push(
+				currentProfile.dropInterval < previousProfile.dropInterval
+					? `${percent}% faster drop speed.`
+					: `${percent}% slower drop speed.`
+			);
+		}
+
+		if (previousProfile && currentProfile.lockDelay !== previousProfile.lockDelay) {
+			const percent = this._calculatePercentChange(previousProfile.lockDelay, currentProfile.lockDelay);
+			changes.push(
+				currentProfile.lockDelay < previousProfile.lockDelay
+					? `${percent}% less time to move or rotate a piece after it touches down.`
+					: `${percent}% more time to move or rotate a piece after it touches down.`
+			);
+		}
+
+		if (details.newColorNames.length > 0) {
+			changes.push(`New orb colors: ${this._formatNaturalList(details.newColorNames)}.`);
+		}
+
+		if (details.newShapeCount > 0) {
+			changes.push(`${details.newShapeCount} new piece layout${details.newShapeCount === 1 ? '' : 's'} added to rotation.`);
+		}
+
+		if (details.newSpecialNames.length > 0) {
+			changes.push(`New special orbs: ${this._formatNaturalList(details.newSpecialNames)}.`);
+		}
+
+		if (previousProfile && currentProfile.diagonalScoreMultiplier !== previousProfile.diagonalScoreMultiplier) {
+			const percentMore = Math.round((currentProfile.diagonalScoreMultiplier - 1) * 100);
+			changes.push(`Diagonal matches now give ${percentMore}% extra score.`);
+		}
+
+		if (previousProfile && currentProfile.painterSpawnMultiplier !== previousProfile.painterSpawnMultiplier) {
+			const percentChange = Math.round((currentProfile.painterSpawnMultiplier - 1) * 100);
+			changes.push(
+				percentChange >= 0
+					? `Painter orbs appear about ${percentChange}% more often.`
+					: `Painter orbs appear about ${Math.abs(percentChange)}% less often.`
+			);
+		}
+
+		if (changes.length === 0) {
+			return 'No major rule changes from the last level. The active colors, pieces, and special orbs are listed above.';
+		}
+
+		return changes.join(' ');
+	}
+
+	/**
+	 * Convert a ratio change to a rounded percent.
+	 * @param {Number} previousValue
+	 * @param {Number} currentValue
+	 * @returns {Number}
+	 * @private
+	 */
+	_calculatePercentChange(previousValue, currentValue) {
+		if (!previousValue) {
+			return 0;
+		}
+		return Math.max(1, Math.round((Math.abs(previousValue - currentValue) / previousValue) * 100));
+	}
+
+	/**
+	 * Get a player-facing color name from its hex value.
+	 * @param {String} colorHex
+	 * @returns {String}
+	 * @private
+	 */
+	_getColorDisplayName(colorHex) {
+		const colorMap = ConfigManager.get('colors.balls', {});
+		const match = Object.entries(colorMap).find(([, hex]) => {
+			return String(hex).toLowerCase() === String(colorHex).toLowerCase();
+		});
+		return match ? this._toTitleCase(match[0]) : 'Unknown';
+	}
+
+	/**
+	 * Format a list of names for UI copy.
+	 * @param {Array<String>} items
+	 * @param {Number} maxItems
+	 * @returns {String}
+	 * @private
+	 */
+	_formatNaturalList(items, maxItems = items.length) {
+		const filtered = items.filter(Boolean);
+		if (filtered.length === 0) {
+			return 'none';
+		}
+		const visible = filtered.slice(0, maxItems);
+		const extraCount = filtered.length - visible.length;
+		const withExtra = extraCount > 0 ? [...visible, `and ${extraCount} more`] : visible;
+		if (withExtra.length === 1) {
+			return withExtra[0];
+		}
+		if (withExtra.length === 2) {
+			return `${withExtra[0]} and ${withExtra[1]}`;
+		}
+		return `${withExtra.slice(0, -1).join(', ')}, and ${withExtra[withExtra.length - 1]}`;
+	}
+
+	/**
+	 * Convert an identifier to title case.
+	 * @param {String} value
+	 * @returns {String}
+	 * @private
+	 */
+	_toTitleCase(value) {
+		return String(value)
+			.replace(/([a-z])([A-Z])/g, '$1 $2')
+			.replace(/[_-]+/g, ' ')
+			.replace(/\b\w/g, char => char.toUpperCase());
+	}
+
+	/**
+	 * Map a special type to indicator metadata.
+	 * @param {String} specialType
+	 * @returns {{label: String, className: String, effect: String}}
+	 * @private
+	 */
+	_getSpecialMetaForChanges(specialType) {
+		const metaMap = {
+			[CONSTANTS.BALL_TYPES.EXPLODING]: {
+				label: 'Exploding Orb',
+				className: 'exploding',
+				effect: 'detonates and clears nearby orbs in a blast radius'
+			},
+			[CONSTANTS.BALL_TYPES.PAINTER_HORIZONTAL]: {
+				label: 'Horizontal Painter',
+				className: 'painter-h',
+				effect: 'paints across a full row when triggered in a match'
+			},
+			[CONSTANTS.BALL_TYPES.PAINTER_VERTICAL]: {
+				label: 'Vertical Painter',
+				className: 'painter-v',
+				effect: 'paints up and down a full column when triggered in a match'
+			},
+			[CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NE]: {
+				label: 'Diagonal Painter (NE-SW)',
+				className: 'painter-dne',
+				effect: 'paints along the northeast-to-southwest diagonal'
+			},
+			[CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NW]: {
+				label: 'Diagonal Painter (NW-SE)',
+				className: 'painter-dnw',
+				effect: 'paints along the northwest-to-southeast diagonal'
+			}
+		};
+		return metaMap[specialType] || { label: 'Special Orb', className: 'pending', effect: 'applies a special board effect' };
+	}
+
+	/**
+	 * Render and display the level changes overlay.
+	 * @param {Array<Object>} entries
+	 * @param {Boolean} isLevelOneModeIntro
+	 * @returns {Boolean} True when overlay was rendered
+	 * @private
+	 */
+	_renderLevelChangesOverlay(entries, isLevelOneModeIntro) {
+		const overlay = document.getElementById('levelChangesOverlay');
+		const title = document.getElementById('levelChangesTitle');
+		const subtitle = document.getElementById('levelChangesSubtitle');
+		const list = document.getElementById('levelChangesList');
+		if (!overlay || !title || !subtitle || !list) {
+			return false;
+		}
+
+		title.textContent = isLevelOneModeIntro
+			? `${this.modeConfig?.name || this.gameMode}: Level 1 Briefing`
+			: `Level ${this.level} Briefing`;
+		subtitle.textContent = isLevelOneModeIntro
+			? 'Quick tips before the run starts.'
+			: 'Review this level briefing before you drop in.';
+
+		const hideCheckbox = document.getElementById('hideLevelChangesCheckbox');
+		if (hideCheckbox) {
+			hideCheckbox.checked = false;
+		}
+
+		list.innerHTML = '';
+		entries.forEach(entry => {
+			const card = document.createElement('div');
+			card.className = 'level-changes-item';
+
+			const titleEl = document.createElement('h4');
+			titleEl.className = 'level-changes-item-title';
+			titleEl.textContent = entry.title;
+
+			const descEl = document.createElement('p');
+			descEl.className = 'level-changes-item-description';
+			descEl.textContent = entry.description;
+
+			if (entry.colorChips && entry.colorChips.length > 0) {
+				const chipRow = document.createElement('div');
+				chipRow.className = 'level-changes-chip-row';
+				entry.colorChips.forEach(color => {
+					const chip = document.createElement('span');
+					chip.className = 'level-changes-color-chip';
+					chip.style.backgroundColor = color;
+					chipRow.appendChild(chip);
+				});
+				card.appendChild(chipRow);
+			}
+
+			if (entry.pieceShapes && entry.pieceShapes.length > 0) {
+				const pieceRow = document.createElement('div');
+				pieceRow.className = 'level-changes-piece-row';
+				const newShapeSet = new Set(entry.newPieceShapes || []);
+				entry.pieceShapes.forEach(shape => {
+					pieceRow.appendChild(this._createPiecePreviewElement(shape, newShapeSet.has(shape)));
+				});
+				card.appendChild(pieceRow);
+			}
+
+			if (entry.specialTypes && entry.specialTypes.length > 0) {
+				const specialRow = document.createElement('div');
+				specialRow.className = 'level-changes-special-row';
+				entry.specialTypes.forEach(type => {
+					const meta = this._getSpecialMetaForChanges(type);
+					const token = document.createElement('div');
+					token.className = 'level-changes-special-token';
+
+					const icon = document.createElement('span');
+					icon.className = `special-indicator-icon ${meta.className}`;
+					if (meta.className === 'pending') {
+						icon.textContent = '?';
+					}
+
+					const label = document.createElement('span');
+					label.className = 'level-changes-special-label';
+					label.textContent = meta.label;
+
+					token.appendChild(icon);
+					token.appendChild(label);
+					specialRow.appendChild(token);
+				});
+				card.appendChild(specialRow);
+			}
+
+			card.appendChild(titleEl);
+			card.appendChild(descEl);
+			list.appendChild(card);
+		});
+
+		overlay.classList.remove('hidden');
+		return true;
+	}
+
+	/**
+	 * Create a small visual preview for a piece shape.
+	 * @param {String} shapeType
+	 * @param {Boolean} isNew
+	 * @returns {HTMLDivElement}
+	 * @private
+	 */
+	_createPiecePreviewElement(shapeType, isNew = false) {
+		const matrix = ConfigManager.get(`pieceShapes.${shapeType}`, [[1]]);
+		const wrapper = document.createElement('div');
+		wrapper.className = `level-changes-piece-token${isNew ? ' new-piece' : ''}`;
+
+		const grid = document.createElement('div');
+		grid.className = 'level-changes-piece-grid';
+		grid.style.gridTemplateColumns = `repeat(${matrix[0]?.length || 1}, 10px)`;
+		grid.style.gridTemplateRows = `repeat(${matrix.length || 1}, 10px)`;
+
+		matrix.forEach(row => {
+			row.forEach(cell => {
+				const cellEl = document.createElement('span');
+				cellEl.className = cell ? 'piece-cell filled' : 'piece-cell empty';
+				grid.appendChild(cellEl);
+			});
+		});
+
+		wrapper.appendChild(grid);
+		return wrapper;
+	}
+
+	/**
+	 * Build a stable key for current level briefing preferences.
+	 * @returns {String}
+	 * @private
+	 */
+	_getCurrentLevelBriefingKey() {
+		return `${this.gameMode}:${this.difficulty}:${this.level}`;
+	}
+
+	/**
+	 * Check whether the current level briefing is hidden.
+	 * @returns {Boolean}
+	 * @private
+	 */
+	_isCurrentLevelBriefingHidden() {
+		return this.hiddenLevelBriefings.has(this._getCurrentLevelBriefingKey());
+	}
+
+	/**
+	 * Set or clear hide preference for current level briefing.
+	 * @param {Boolean} hidden
+	 * @returns {void}
+	 * @private
+	 */
+	_setCurrentLevelBriefingHidden(hidden) {
+		const key = this._getCurrentLevelBriefingKey();
+		if (hidden) {
+			this.hiddenLevelBriefings.add(key);
+		} else {
+			this.hiddenLevelBriefings.delete(key);
+		}
+		this._saveHiddenLevelBriefings();
+	}
+
+	/**
+	 * Load hidden level briefing keys from localStorage.
+	 * @returns {Set<String>}
+	 * @private
+	 */
+	_loadHiddenLevelBriefings() {
+		try {
+			const raw = localStorage.getItem(this.levelBriefingStorageKey);
+			if (!raw) return new Set();
+			const parsed = JSON.parse(raw);
+			return Array.isArray(parsed) ? new Set(parsed) : new Set();
+		} catch (e) {
+			return new Set();
+		}
+	}
+
+	/**
+	 * Persist hidden level briefing keys to localStorage.
+	 * @returns {void}
+	 * @private
+	 */
+	_saveHiddenLevelBriefings() {
+		try {
+			localStorage.setItem(this.levelBriefingStorageKey, JSON.stringify([...this.hiddenLevelBriefings]));
+		} catch (e) {
+			// Ignore storage failures to avoid impacting gameplay.
+		}
+	}
+
+	/**
+	 * Hide level changes overlay.
+	 * @returns {void}
+	 * @private
+	 */
+	_hideLevelChangesOverlay() {
+		const overlay = document.getElementById('levelChangesOverlay');
+		if (overlay) {
+			overlay.classList.add('hidden');
+		}
 	}
 
 	/**
