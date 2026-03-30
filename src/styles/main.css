@@ -1484,27 +1484,9 @@ body::after {
 	letter-spacing: 0.03em;
 }
 
-.level-complete-match-stats {
-	margin: 1rem 0;
-	padding: 1rem;
-	background-color: rgba(255, 255, 255, 0.05);
-	border-radius: 5px;
-	border: 1px solid #444444;
-}
-
-.level-complete-match-stats h3 {
-	margin: 0 0 0.75rem 0;
-	font-size: 1rem;
-	color: #00ff88;
-	text-align: center;
-}
-
-.level-complete-match-stats .stats-board {
-	font-size: 11px;
-}
-
-.level-complete-match-stats .stats-table {
-	margin: 0 auto;
+#levelCompleteOverlay .overlay-content {
+	min-width: 360px;
+	padding: 2.25rem;
 }
 
 .level-complete-reason {
@@ -1933,6 +1915,11 @@ body::after {
 	.overlay-content {
 		min-width: 300px;
 		padding: 2rem;
+	}
+
+	#levelCompleteOverlay .overlay-content {
+		min-width: 300px;
+		padding: 1.75rem;
 	}
 }
 

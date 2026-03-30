@@ -2352,9 +2352,6 @@ class GameEngineClass {
 			}
 		}
 		
-		// Render match statistics to the overlay
-		StatisticsTracker.renderToElement('levelCompleteStatsBoard');
-
 		// Populate recap stats
 		this._populateRecap(timeSurvived, goalBonus);
 
