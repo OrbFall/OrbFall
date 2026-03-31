@@ -1648,7 +1648,7 @@ body::after {
 
 .overlay-content h2 {
 	font-size: 2.5rem;
-	margin-bottom: 2rem;
+	margin-bottom: 1.5rem;
 	background: linear-gradient(135deg, #00ff88, #00ccff);
 	-webkit-background-clip: text;
 	-webkit-text-fill-color: transparent;
@@ -1661,7 +1661,7 @@ body::after {
 	gap: 1rem;
 	justify-content: center;
 	flex-wrap: wrap;
-	margin-top: 2rem;
+	margin-top: 1.5rem;
 }
 
 /* Share Button */
@@ -1758,20 +1758,18 @@ body::after {
 .level-changes-content {
 	min-width: 380px;
 	max-width: 640px;
-	padding: 2rem;
-}
-
-.level-changes-subtitle {
-	color: #9ddcff;
-	margin-bottom: 1rem;
-	font-size: 1rem;
+	padding: 1.5rem;
+	height: 90vh;
+	display: flex;
+	flex-direction: column;
 }
 
 .level-changes-list {
 	display: grid;
 	grid-template-columns: 1fr;
 	gap: 0.6rem;
-	max-height: 42vh;
+	flex: 1;
+	min-height: 0;
 	overflow-y: auto;
 	padding-right: 0.25rem;
 }
@@ -1884,7 +1882,7 @@ body::after {
 	display: inline-flex;
 	align-items: center;
 	gap: 0.45rem;
-	margin-top: 0.8rem;
+	margin-top: 0.4rem;
 	color: #cde4ff;
 	font-size: 0.85rem;
 	user-select: none;
@@ -2348,10 +2346,12 @@ body::after {
 		min-width: 300px;
 		max-width: 92vw;
 		padding: 1.5rem;
+		height: 90vh;
 	}
 
 	.level-changes-list {
-		max-height: 36vh;
+		flex: 1;
+		min-height: 0;
 	}
 }
 

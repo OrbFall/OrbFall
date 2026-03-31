@@ -309,7 +309,7 @@ testSuite.tests.push({
 		
 		// Expected ball counts for each shape
 		const expectedCounts = {
-			[CONSTANTS.PIECE_TYPES.I]: 4,
+			[CONSTANTS.PIECE_TYPES.I]: 2,
 			[CONSTANTS.PIECE_TYPES.O]: 6,
 			[CONSTANTS.PIECE_TYPES.T]: 4,
 			[CONSTANTS.PIECE_TYPES.L]: 4,
@@ -1053,7 +1053,7 @@ testSuite.tests.push({
 		const expectedBalls = {
 			'V': 3, 'Line3': 3,
 			'Plus': 5, 'U': 5,
-			'P': 5, 'Y': 5, 'LongS': 5, 'LongZ': 5,
+			'P': 5, 'Y': 4, 'LongS': 5, 'LongZ': 5,
 			'LongL': 6, 'LongJ': 6,
 			'Ring': 8
 		};

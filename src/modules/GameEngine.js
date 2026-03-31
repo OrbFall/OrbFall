@@ -2530,6 +2530,7 @@ class GameEngineClass {
 			return {
 				mode: this.gameMode,
 				difficulty: this.difficulty,
+				level: this.level || 1,
 				dropInterval: progressionState.dropIntervalMs,
 				lockDelay: progressionState.lockDelayMs,
 				diagonalScoreMultiplier: progressionState.diagonalScoreMultiplier,
@@ -2552,6 +2553,7 @@ class GameEngineClass {
 		return {
 			mode: this.gameMode,
 			difficulty: this.difficulty,
+			level: this.level || 1,
 			dropInterval: Math.max(200, 1000 - (this.difficulty * 150)),
 			lockDelay: modifiers.lockDelay,
 			diagonalScoreMultiplier: modifiers.diagonalScoreMultiplier,
@@ -2583,6 +2585,7 @@ class GameEngineClass {
 		const baselineProfile = previousProfile
 			&& previousProfile.mode === this.gameMode
 			&& previousProfile.difficulty === this.difficulty
+			&& previousProfile.level !== this.level
 			? previousProfile
 			: this._buildProfileForLevel(Math.max(1, this.level - 1), this.difficulty, this.gameMode);
 
@@ -2947,18 +2950,14 @@ class GameEngineClass {
 	_renderLevelChangesOverlay(entries, isLevelOneModeIntro) {
 		const overlay = document.getElementById('levelChangesOverlay');
 		const title = document.getElementById('levelChangesTitle');
-		const subtitle = document.getElementById('levelChangesSubtitle');
 		const list = document.getElementById('levelChangesList');
-		if (!overlay || !title || !subtitle || !list) {
+		if (!overlay || !title || !list) {
 			return false;
 		}
 
 		title.textContent = isLevelOneModeIntro
 			? `${this.modeConfig?.name || this.gameMode}: Level 1 Briefing`
 			: `Level ${this.level} Briefing`;
-		subtitle.textContent = isLevelOneModeIntro
-			? 'Quick tips before the run starts.'
-			: 'Review this level briefing before you drop in.';
 
 		const hideCheckbox = document.getElementById('hideLevelChangesCheckbox');
 		if (hideCheckbox) {

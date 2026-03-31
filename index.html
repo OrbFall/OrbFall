@@ -126,10 +126,6 @@
 					<input type="number" id="levelInput" class="hud-input" min="1" max="20" value="1" style="display: none;">
 				</div>
 		</div>	<div class="hud-center">
-		<div class="hud-item colors-compact">
-			<span class="hud-label">Colors:</span>
-			<div id="availableColors" class="available-colors"></div>
-		</div>
 		<div class="hud-item timer">
 			<span id="timerDisplay" class="hud-value timer-value">15.0s</span>
 		</div>
@@ -375,15 +371,14 @@
 		<div id="levelChangesOverlay" class="overlay hidden">
 			<div class="overlay-content level-changes-content">
 				<h2 id="levelChangesTitle">Level Changes</h2>
-				<p id="levelChangesSubtitle" class="level-changes-subtitle"></p>
 				<div id="levelChangesList" class="level-changes-list"></div>
+				<div class="overlay-actions">
+					<button id="levelChangesContinueButton" class="btn-primary">Start Level</button>
+				</div>
 				<label class="level-changes-hide-option" for="hideLevelChangesCheckbox">
 					<input type="checkbox" id="hideLevelChangesCheckbox">
 					Hide this level briefing next time
 				</label>
-				<div class="overlay-actions">
-					<button id="levelChangesContinueButton" class="btn-primary">Start Level</button>
-				</div>
 			</div>
 		</div>
 		
