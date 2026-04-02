@@ -126,21 +126,9 @@
 					<input type="number" id="levelInput" class="hud-input" min="1" max="20" value="1" style="display: none;">
 				</div>
 		</div>	<div class="hud-center">
-		<div class="hud-item colors-compact">
-			<span class="hud-label">Colors:</span>
-			<div id="availableColors" class="available-colors"></div>
-		</div>
 		<div class="hud-item timer">
 			<span id="timerDisplay" class="hud-value timer-value">15.0s</span>
 		</div>
-			<div class="hud-item preview-compact">
-				<span class="hud-label">Next:</span>
-				<canvas id="previewCanvas" width="96" height="72"></canvas>
-			</div>
-			<div class="hud-item special-indicator" id="specialIndicator" style="display: none;">
-				<div class="special-indicator-icon" id="specialIndicatorIcon"></div>
-				<div class="special-indicator-text" id="specialIndicatorText"></div>
-			</div>
 		</div>				<div class="hud-right">
 				<div class="hud-item">
 					<span class="hud-label">Score:</span>
@@ -158,6 +146,7 @@
 	</div>
 		<!-- Goal Progress Bar -->
 		<div id="goalBar" class="goal-bar hidden">
+			<span class="goal-bar-label">⭐ Bonus Objectives:</span>
 			<div id="goalItems" class="goal-items">
 				<!-- Populated by JavaScript -->
 			</div>
@@ -175,72 +164,8 @@
 		</div>
 		<!-- Game Board Container -->
 		<div class="game-container">
-			<!-- Orb Types Legend -->
-			<div class="ball-legend">
-				<h3>Orb Types</h3>
-				<div class="legend-item">
-					<div class="legend-ball normal-ball"></div>
-					<div class="legend-text">
-						<strong>Normal</strong>
-						<span>Standard orb</span>
-					</div>
-				</div>
-				<div class="legend-item">
-					<div class="legend-ball exploding-ball"></div>
-					<div class="legend-text">
-						<strong>Exploding</strong>
-						<span>Destroys nearby orbs</span>
-					</div>
-				</div>
-				<div class="legend-item">
-					<div class="legend-ball blocking-ball">✕</div>
-					<div class="legend-text">
-						<strong>Blocking</strong>
-						<span>Cleared only by explosions</span>
-					</div>
-				</div>
-				<div class="legend-item">
-					<div class="legend-ball painter-h">─</div>
-					<div class="legend-text">
-						<strong>Painter H</strong>
-						<span>Paints row same color</span>
-					</div>
-				</div>
-				<div class="legend-item">
-					<div class="legend-ball painter-v">│</div>
-					<div class="legend-text">
-						<strong>Painter V</strong>
-						<span>Paints column same color</span>
-					</div>
-				</div>
-				<div class="legend-item">
-					<div class="legend-ball painter-dne">╱</div>
-					<div class="legend-text">
-						<strong>Painter NE</strong>
-						<span>Paints NE-SW diagonal</span>
-					</div>
-				</div>
-				<div class="legend-item">
-					<div class="legend-ball painter-dnw">╲</div>
-					<div class="legend-text">
-						<strong>Painter NW</strong>
-						<span>Paints NW-SE diagonal</span>
-					</div>
-				</div>
-			</div>
-			
 			<!-- Main Game Canvas -->
 			<canvas id="gameCanvas"></canvas>
-			
-			<!-- Statistics Panel (desktop only) -->
-			<div class="stats-panel-container">
-				<div class="stats-panel">
-					<h3>Match Statistics</h3>
-					<div id="statsBoard" class="stats-board">
-						<!-- Will be populated by JavaScript -->
-					</div>
-				</div>
-			</div>
 		</div>
 			
 			<!-- Controls Info -->
@@ -375,15 +300,14 @@
 		<div id="levelChangesOverlay" class="overlay hidden">
 			<div class="overlay-content level-changes-content">
 				<h2 id="levelChangesTitle">Level Changes</h2>
-				<p id="levelChangesSubtitle" class="level-changes-subtitle"></p>
 				<div id="levelChangesList" class="level-changes-list"></div>
+				<div class="overlay-actions">
+					<button id="levelChangesContinueButton" class="btn-primary">Start Level</button>
+				</div>
 				<label class="level-changes-hide-option" for="hideLevelChangesCheckbox">
 					<input type="checkbox" id="hideLevelChangesCheckbox">
 					Hide this level briefing next time
 				</label>
-				<div class="overlay-actions">
-					<button id="levelChangesContinueButton" class="btn-primary">Start Level</button>
-				</div>
 			</div>
 		</div>
 		
@@ -419,8 +343,8 @@
 						<label for="musicVolumeSlider">
 							<span class="setting-icon">🎵</span> Music:
 						</label>
-						<input type="range" id="musicVolumeSlider" min="0" max="100" value="50" class="volume-slider">
-						<span id="musicVolumeValue" class="volume-value">50%</span>
+					<input type="range" id="musicVolumeSlider" min="0" max="100" value="0" class="volume-slider">
+					<span id="musicVolumeValue" class="volume-value">0%</span>
 					</div>
 					
 					<div class="setting-item">

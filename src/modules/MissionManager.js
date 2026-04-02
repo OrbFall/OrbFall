@@ -51,6 +51,7 @@ class MissionManagerClass {
 
 		// Build chain from config, filtering out impossible goals
 		const chainCfg = ConfigManager.get('mission.goalChain', []);
+		const basePoints = ConfigManager.get('mission.pointsPerGoal', 50);
 		let idx = 0;
 		this.chain = [];
 		for (const cfg of chainCfg) {
@@ -58,13 +59,20 @@ class MissionManagerClass {
 			if (cfg.type === 'useSpecials' && !hasSpecials) continue;
 
 			const target = this._computeTarget(cfg);
+			const points = Math.ceil(basePoints * Math.pow(1.2, this.chain.length) / 5) * 5;
+			// Cascade and streak goals are binary (achieved or not): target=1, required depth/streak stored separately
+			const isCascade = cfg.type === 'cascade';
+			const isStreak = cfg.type === 'streak';
 			this.chain.push({
 				id: idx++,
 				type: cfg.type,
 				label: cfg.label.replace('{n}', target),
-				target,
+				target: (isCascade || isStreak) ? 1 : target,
+				requiredDepth: isCascade ? target : undefined,
+				requiredStreak: isStreak ? target : undefined,
 				progress: 0,
-				completed: false
+				completed: false,
+				points
 			});
 		}
 
@@ -124,9 +132,7 @@ class MissionManagerClass {
 	 * @returns {Number}
 	 */
 	calculateScore(remainingTime) {
-		const pointsPerGoal = ConfigManager.get('mission.pointsPerGoal', 50);
-		const timeMult = ConfigManager.get('mission.timeBonusMultiplier', 2);
-		return (this.goalsCompleted * pointsPerGoal) + Math.floor(Math.max(0, remainingTime) * timeMult);
+		return 0; // Points awarded immediately per-mission via MISSION_GOAL_COMPLETE
 	}
 
 	// ── Event Handlers ──
@@ -154,8 +160,8 @@ class MissionManagerClass {
 		if (!goal || goal.completed) return;
 
 		if (goal.type === 'cascade') {
-			if (data.cascadeCount > goal.progress) {
-				goal.progress = data.cascadeCount;
+			if (data.cascadeCount >= (goal.requiredDepth ?? goal.target)) {
+				goal.progress = 1;
 			}
 		}
 
@@ -168,8 +174,8 @@ class MissionManagerClass {
 		if (!goal || goal.completed) return;
 
 		if (goal.type === 'streak') {
-			if (data.matchStreak !== undefined && data.matchStreak > goal.progress) {
-				goal.progress = data.matchStreak;
+			if (data.matchStreak !== undefined && data.matchStreak >= (goal.requiredStreak ?? goal.target)) {
+				goal.progress = 1;
 			}
 		}
 
@@ -185,6 +191,12 @@ class MissionManagerClass {
 		if (goal.progress >= goal.target) {
 			goal.completed = true;
 			this.goalsCompleted++;
+			EventEmitter.emit(CONSTANTS.EVENTS.MISSION_GOAL_COMPLETE, {
+				goal: { id: goal.id, label: goal.label, points: goal.points },
+				goalsCompleted: this.goalsCompleted,
+				totalGoals: this.chain.length,
+				chainComplete: this.currentIndex + 1 >= this.chain.length
+			});
 			this.currentIndex++;
 		}
 
@@ -200,7 +212,8 @@ class MissionManagerClass {
 				label: current.label,
 				progress: Math.min(current.progress, current.target),
 				target: current.target,
-				completed: current.completed
+				completed: current.completed,
+				points: current.points
 			} : null,
 			goalsCompleted: this.goalsCompleted,
 			totalGoals: this.chain.length,

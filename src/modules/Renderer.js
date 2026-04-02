@@ -205,6 +205,30 @@ class Renderer {
 	}
 	
 	/**
+	 * Render next piece on the main board at the spawn position, 50% transparent
+	 * @param {Piece} piece - Next piece to preview
+	 * @param {Number} gridCols - Total grid columns
+	 * @returns {void}
+	 */
+	renderNextPieceOnBoard(piece, gridCols) {
+		const shape = piece.getShape();
+		const balls = piece.getBalls();
+		const spawnX = Math.floor(gridCols / 2) - Math.floor(piece.getWidth() / 2);
+		
+		this.ctx.save();
+		this.ctx.globalAlpha = 0.15;
+		
+		let ballIndex = 0;
+		iterateShapeCells(shape, (row, col) => {
+			const ball = balls[ballIndex];
+			this._drawBall(ball, spawnX + col, row);
+			ballIndex++;
+		});
+		
+		this.ctx.restore();
+	}
+	
+	/**
 	 * Draw a ball at grid position
 	 * @param {Ball} ball - Ball to draw
 	 * @param {Number} col - Column position

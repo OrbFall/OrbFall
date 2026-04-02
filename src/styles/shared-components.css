@@ -9,42 +9,6 @@
    Orb Rendering Styles
    ============================================ */
 
-/* Base orb classes */
-.orb-red {
-	background: var(--color-orb-red);
-	box-shadow: var(--glow-red), var(--shadow-small);
-}
-
-.orb-blue {
-	background: var(--color-orb-blue);
-	box-shadow: var(--glow-blue), var(--shadow-small);
-}
-
-.orb-green {
-	background: var(--color-orb-green);
-	box-shadow: var(--glow-green), var(--shadow-small);
-}
-
-.orb-yellow {
-	background: var(--color-orb-yellow);
-	box-shadow: var(--glow-yellow), var(--shadow-small);
-}
-
-.orb-orange {
-	background: var(--color-orb-orange);
-	box-shadow: var(--glow-orange), var(--shadow-small);
-}
-
-.orb-purple {
-	background: var(--color-orb-purple);
-	box-shadow: var(--glow-purple), var(--shadow-small);
-}
-
-.orb-gray {
-	background: var(--color-orb-gray);
-	box-shadow: var(--glow-gray), var(--shadow-small);
-}
-
 /* ============================================
    Glow Animations
    ============================================ */

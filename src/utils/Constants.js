@@ -193,6 +193,7 @@ const CONSTANTS = {
 		GOAL_UPDATE: 'goalUpdateEvent',
 		HINT_SHOWN: 'hintShownEvent',
 		MISSION_GOAL_UPDATE: 'missionGoalUpdateEvent',
+		MISSION_GOAL_COMPLETE: 'missionGoalCompleteEvent',
 		PUZZLE_PIECES_UPDATE: 'puzzlePiecesUpdateEvent'
 	},
 	

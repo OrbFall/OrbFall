@@ -7,7 +7,45 @@
 	--color-primary: #667eea;
 	--color-primary-dark: #764ba2;
 	--color-accent: #f093fb;
-	
+
+	/* Game UI – Green Family */
+	--color-game-green: #00ff88;
+	--color-game-green-dark: #00cc77;
+	--color-game-green-hover: #00dd77;
+	--color-game-green-darker: #00bb66;
+	--color-game-green-rgb: 0, 255, 136;
+	--color-cyan: #00ccff;
+
+	/* Danger / Error */
+	--color-danger: #ff4444;
+	--color-danger-dark: #cc0000;
+	--color-danger-hover: #dd3333;
+	--color-danger-darker: #bb0000;
+	--color-danger-rgb: 255, 68, 68;
+
+	/* Background & Surface */
+	--color-bg: #0f0f1e;
+	--color-surface-dark: #1a1a2e;
+	--color-surface-mid: #1f1f32;
+	--color-surface: #2a2a3e;
+	--color-surface-hover: #3a3a4e;
+	--color-surface-hover-dark: #2f2f42;
+	--color-surface-light: #f8f9fa;
+
+	/* Borders */
+	--color-border: #444444;
+	--color-border-mid: #666666;
+
+	/* Text */
+	--color-text: #ffffff;
+	--color-text-muted: #aaaaaa;
+	--color-text-dim: #888888;
+
+	/* Accent / Misc */
+	--color-gold: #ffd700;
+	--color-gold-rgb: 255, 215, 0;
+	--color-ad-accent: #4080ff;
+
 	/* Game Orb Colors */
 	--color-orb-red: #FF0000;
 	--color-orb-blue: #0000FF;

@@ -19,7 +19,7 @@ class AudioManagerClass {
 		this.audioContext = null;
 		this.masterVolume = 0.7;
 		this.sfxVolume = 0.8;
-		this.musicVolume = 0.5;
+		this.musicVolume = 0;
 		this.isMuted = false;
 		this.isInitialized = false;
 		
@@ -1119,7 +1119,7 @@ class AudioManagerClass {
 				const settings = JSON.parse(saved);
 				this.masterVolume = settings.masterVolume ?? 0.7;
 				this.sfxVolume = settings.sfxVolume ?? 0.8;
-				this.musicVolume = settings.musicVolume ?? 0.5;
+				this.musicVolume = settings.musicVolume ?? 0;
 				this.isMuted = settings.isMuted ?? false;
 			}
 		} catch (error) {

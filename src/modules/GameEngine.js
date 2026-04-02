@@ -365,17 +365,15 @@ class GameEngineClass {
 			}
 		});
 
-		// Mission goal completion floating text
-		EventEmitter.on(CONSTANTS.EVENTS.MISSION_GOAL_UPDATE, (data) => {
-			if (!data.current) return;
-			if (data.current.completed) {
-				const centerX = this.renderer.offsetX + (this.grid.cols * this.renderer.cellSize) / 2;
-				const topY = this.renderer.offsetY + 60;
-				if (data.chainComplete) {
-					this.floatingTextManager.add('🏆 ALL MISSIONS COMPLETE!', centerX, topY, 2500, '#FFD700');
-				} else {
-					this.floatingTextManager.add(`✅ Mission ${data.goalsCompleted}/${data.totalGoals}!`, centerX, topY, 2000, '#00FF88');
-				}
+		// Mission goal completion: award points immediately and show floating text
+		EventEmitter.on(CONSTANTS.EVENTS.MISSION_GOAL_COMPLETE, (data) => {
+			ScoreManager.addPoints(data.goal.points);
+			const centerX = this.renderer.offsetX + (this.grid.cols * this.renderer.cellSize) / 2;
+			const topY = this.renderer.offsetY + 60;
+			if (data.chainComplete) {
+				this.floatingTextManager.add(`🏆 ALL MISSIONS COMPLETE! +${data.goal.points}pts`, centerX, topY, 2500, '#FFD700');
+			} else {
+				this.floatingTextManager.add(`✅ Mission ${data.goalsCompleted}/${data.totalGoals} +${data.goal.points}pts`, centerX, topY, 2000, '#00FF88');
 			}
 		});
 	}
@@ -844,18 +842,15 @@ class GameEngineClass {
 			this._pruneMatchHighlights();
 			this.renderer.renderMatchHighlights(this.matchHighlights);
 			
-			// Render next piece preview (skip if debug mode is waiting for selection)
+			// Render next piece preview on board (once current piece has cleared the spawn zone)
 			const hasNextPiece = this.nextPiece !== null;
-			const previewCanvas = document.getElementById('previewCanvas');
-			const hasPreviewCanvas = previewCanvas !== null;
 			const isDebugWaiting = DebugMode.isEnabled() && this.waitingForDebugPiece;
 			
-			// Render preview if available and not in debug selection mode
-			if (hasNextPiece && hasPreviewCanvas && !isDebugWaiting) {
-				this.renderer.renderNextPiece(this.nextPiece, previewCanvas);
-			}
-			else {
-				// No preview to render
+			if (hasNextPiece && hasPiece && !isDebugWaiting) {
+				const pos = this.currentPiece.getPosition();
+				if (pos.y >= 4) {
+					this.renderer.renderNextPieceOnBoard(this.nextPiece, this.grid.cols);
+				}
 			}
 			
 			// Update and render floating texts
@@ -908,57 +903,6 @@ class GameEngineClass {
 		if (levelDisplay) {
 			levelDisplay.textContent = this.level;
 		}
-		
-		// Update special interval indicator
-		const specialIndicator = document.getElementById('specialIndicator');
-		const specialIndicatorIcon = document.getElementById('specialIndicatorIcon');
-		const specialIndicatorText = document.getElementById('specialIndicatorText');
-		if (specialIndicator && specialIndicatorIcon && specialIndicatorText) {
-			const intervalStatus = PieceFactory.getSpecialIntervalStatus?.();
-			const canShow = intervalStatus && intervalStatus.enabled && intervalStatus.piecesUntilNext !== null;
-			if (canShow) {
-				const inRevealWindow = intervalStatus.piecesUntilNext > 0 && intervalStatus.piecesUntilNext <= intervalStatus.revealWindow;
-				if (inRevealWindow && intervalStatus.nextSpecialType) {
-					const meta = this._getSpecialIndicatorMeta(intervalStatus.nextSpecialType);
-					specialIndicatorIcon.className = `special-indicator-icon ${meta.className}`;
-					specialIndicatorIcon.textContent = '';
-					if (intervalStatus.nextSpecialColor) {
-						specialIndicatorIcon.style.backgroundColor = intervalStatus.nextSpecialColor;
-						specialIndicatorIcon.style.boxShadow = `0 0 8px ${intervalStatus.nextSpecialColor}`;
-					} else {
-						specialIndicatorIcon.style.backgroundColor = '';
-						specialIndicatorIcon.style.boxShadow = '';
-					}
-					specialIndicatorText.textContent = `Next: ${meta.label} in ${intervalStatus.piecesUntilNext}`;
-				} else {
-					specialIndicatorIcon.className = 'special-indicator-icon pending';
-					specialIndicatorIcon.textContent = '?';
-					specialIndicatorIcon.style.backgroundColor = '';
-					specialIndicatorIcon.style.boxShadow = '';
-					specialIndicatorText.textContent = `Special in ${intervalStatus.piecesUntilNext}`;
-				}
-				specialIndicator.style.display = '';
-			} else {
-				specialIndicator.style.display = 'none';
-			}
-		}
-	}
-	
-	/**
-	 * Get label and CSS class for a special indicator
-	 * @param {String} specialType - Ball type constant
-	 * @returns {{label: String, className: String}} Indicator metadata
-	 * @private
-	 */
-	_getSpecialIndicatorMeta(specialType) {
-		const metaMap = {
-			[CONSTANTS.BALL_TYPES.EXPLODING]: { label: 'Exploding Orb', className: 'exploding' },
-			[CONSTANTS.BALL_TYPES.PAINTER_HORIZONTAL]: { label: 'Horizontal Painter', className: 'painter-h' },
-			[CONSTANTS.BALL_TYPES.PAINTER_VERTICAL]: { label: 'Vertical Painter', className: 'painter-v' },
-			[CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NE]: { label: 'Diagonal Painter (NE-SW)', className: 'painter-dne' },
-			[CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NW]: { label: 'Diagonal Painter (NW-SE)', className: 'painter-dnw' }
-		};
-		return metaMap[specialType] || { label: 'Special', className: 'pending' };
 	}
 	
 	/**
@@ -2530,6 +2474,7 @@ class GameEngineClass {
 			return {
 				mode: this.gameMode,
 				difficulty: this.difficulty,
+				level: this.level || 1,
 				dropInterval: progressionState.dropIntervalMs,
 				lockDelay: progressionState.lockDelayMs,
 				diagonalScoreMultiplier: progressionState.diagonalScoreMultiplier,
@@ -2552,6 +2497,7 @@ class GameEngineClass {
 		return {
 			mode: this.gameMode,
 			difficulty: this.difficulty,
+			level: this.level || 1,
 			dropInterval: Math.max(200, 1000 - (this.difficulty * 150)),
 			lockDelay: modifiers.lockDelay,
 			diagonalScoreMultiplier: modifiers.diagonalScoreMultiplier,
@@ -2583,6 +2529,7 @@ class GameEngineClass {
 		const baselineProfile = previousProfile
 			&& previousProfile.mode === this.gameMode
 			&& previousProfile.difficulty === this.difficulty
+			&& previousProfile.level !== this.level
 			? previousProfile
 			: this._buildProfileForLevel(Math.max(1, this.level - 1), this.difficulty, this.gameMode);
 
@@ -2947,18 +2894,14 @@ class GameEngineClass {
 	_renderLevelChangesOverlay(entries, isLevelOneModeIntro) {
 		const overlay = document.getElementById('levelChangesOverlay');
 		const title = document.getElementById('levelChangesTitle');
-		const subtitle = document.getElementById('levelChangesSubtitle');
 		const list = document.getElementById('levelChangesList');
-		if (!overlay || !title || !subtitle || !list) {
+		if (!overlay || !title || !list) {
 			return false;
 		}
 
 		title.textContent = isLevelOneModeIntro
 			? `${this.modeConfig?.name || this.gameMode}: Level 1 Briefing`
 			: `Level ${this.level} Briefing`;
-		subtitle.textContent = isLevelOneModeIntro
-			? 'Quick tips before the run starts.'
-			: 'Review this level briefing before you drop in.';
 
 		const hideCheckbox = document.getElementById('hideLevelChangesCheckbox');
 		if (hideCheckbox) {

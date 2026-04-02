@@ -259,10 +259,12 @@ class AdManagerClass {
 			if (overlay.parentNode) {
 				overlay.parentNode.removeChild(overlay);
 			}
+			document.body.classList.remove('interstitial-active');
 		});
 
 		overlay.appendChild(skipButton);
 		document.body.appendChild(overlay);
+		document.body.classList.add('interstitial-active');
 	}
 
 	/**
@@ -275,6 +277,7 @@ class AdManagerClass {
 		if (interstitial && interstitial.parentNode) {
 			interstitial.parentNode.removeChild(interstitial);
 		}
+		document.body.classList.remove('interstitial-active');
 	}
 
 	/**

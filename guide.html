@@ -4,7 +4,6 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>How to Play - Orb Fall: ChromaCrush</title>
-	<link rel="stylesheet" href="src/styles/shared-variables.css">
 	<link rel="stylesheet" href="src/styles/shared-components.css">
 	<link rel="stylesheet" href="src/styles/static-pages.css">
 </head>
@@ -19,7 +18,7 @@
 			<!-- Game Modes -->
 			<div class="section">
 				<h2>🎮 Game Modes</h2>
-				<p>Choose from four exciting game modes, each with unique challenges:</p>
+				<p>Choose from six game modes, each with unique challenges:</p>
 				
 				<div class="modes-list">
 					<h3 class="mode-heading mode-classic">⚡ Classic</h3>
@@ -33,6 +32,12 @@
 					
 					<h3 class="mode-heading mode-rising-tide">🌊 Rising Tide</h3>
 					<p class="mode-desc">Rows of blocking orbs rise from the bottom every 5 seconds! These immovable obstacles push your orbs upward, adding constant pressure. <strong>Tip:</strong> Use Exploding orbs to destroy blocking orbs - it's the only way to clear them! Plan your moves carefully!</p>
+					
+					<h3 class="mode-heading mode-mission">🎯 Mission</h3>
+					<p class="mode-desc">Complete a chain of sequential micro-goals — clear a set number of orbs, reach a score target, trigger a cascade, or build a streak. Only one goal is revealed at a time; finishing it unlocks the next. Each goal is worth more points than the last, and a time bonus rewards speed. Complete the whole chain to win the level!</p>
+					
+					<h3 class="mode-heading mode-puzzle">🧩 Puzzle</h3>
+					<p class="mode-desc">Every level generates the same sequence of pieces for everyone — no randomness, pure strategy. You have a piece budget; use fewer pieces to score higher. Earn bronze, silver, or gold stars based on your score. A great mode for perfectionists and competitive players who want to compare runs on equal footing.</p>
 				</div>
 			</div>
 
@@ -183,7 +188,30 @@
 						<div class="score-number">💎</div>
 						<div class="score-label">Higher Difficulty = Bigger Scores</div>
 					</div>
+					<div class="score-card">
+						<div class="score-number">⭐</div>
+						<div class="score-label">Bonus Objectives = Extra Points</div>
+					</div>
 				</div>
+
+				<h3 class="subsection-heading">⭐ Bonus Objectives</h3>
+				<p>At the start of each level (in Classic, Zen, Gauntlet, and Rising Tide), two random bonus objectives appear in the goal bar at the top of the screen. Complete them for extra points — they're optional, but they scale with difficulty!</p>
+				<ul>
+					<li><strong>Clear N orbs</strong> — clear a target number of orbs. Scales with level &amp; difficulty.</li>
+					<li><strong>Nx Cascade</strong> — trigger a chain reaction at least that deep. Caps at 6× on higher levels.</li>
+					<li><strong>Clear N Specials</strong> — clear a set number of special orbs. Only appears once specials are unlocked.</li>
+				</ul>
+				<p>Each completed objective is worth <strong>+25 points</strong> (before difficulty multiplier). Two are chosen randomly each level.</p>
+
+				<h3 class="subsection-heading">🎯 Mission Mode Scoring</h3>
+				<p>Mission mode scores differently from other modes. Instead of a timer-based score, you earn points by completing each goal in the chain:</p>
+				<ul>
+					<li>The <strong>first goal</strong> is worth a base of 50 points.</li>
+					<li>Each subsequent goal is worth <strong>~20% more</strong> than the previous one, rounded to the nearest 5.</li>
+					<li>Points are awarded <strong>immediately</strong> when you complete a goal — you don't need to finish the whole chain to bank your score.</li>
+					<li>Complete all 8 goals in the chain to finish the level. The later goals are harder (bigger cascades, more specials, more orbs cleared), but worth significantly more points.</li>
+				</ul>
+				<p>The four goal types in Mission chains are: <em>Clear N orbs</em>, <em>Achieve a Nx cascade</em>, <em>Clear N special orbs</em>, and <em>Reach a Nx streak</em> (consecutive matches without dropping a piece that causes no match).</p>
 			</div>
 
 			<!-- Controls -->

@@ -267,6 +267,8 @@ function showScreen(screenId) {
 			}
 		}
 	});
+
+	document.body.classList.toggle('home-screen', screenId === 'menuScreen');
 }
 
 /**
@@ -483,7 +485,7 @@ function setupScoreListener() {
 			if (missionObjective) missionObjective.textContent = 'All missions complete!';
 			if (missionProgress) missionProgress.textContent = `${data.goalsCompleted}/${data.totalGoals}`;
 		} else if (data.current) {
-			if (missionObjective) missionObjective.textContent = data.current.label;
+			if (missionObjective) missionObjective.textContent = `${data.current.label} (+${data.current.points}pts)`;
 			if (missionProgress) missionProgress.textContent = `${data.current.progress}/${data.current.target}`;
 		}
 	});

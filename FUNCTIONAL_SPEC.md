@@ -83,14 +83,16 @@ Unlocked progressively as difficulty increases:
 **Note:** Variable ball counts (1-8) ensure each piece shape is visually distinct. Shape unlock tiers are configurable via `shapeUnlocks` in config.json.
 
 ### 3.2 Ball Colors
-- **Starting Colors (Levels 1-2):** 3 colors (Red, Green, Blue)
-- **Level 3:** 4 colors (add Yellow)
-- **Level 7:** 5 colors (add Magenta)
-- **Level 11:** 6 colors (add Cyan)
-- **Level 15:** 7 colors (add Orange)
-- **Level 19+:** 8 colors (add Purple)
+Color unlocks are driven by the level progression system (see §6.5). New colors are added incrementally as the player advances:
 
-**Color Palette:** RGB primaries + CMY secondaries (configurable via config.json)
+- **Level 1 (baseline):** 3 colors — Red, Green, Blue
+- **Level 3:** +Yellow (4 colors)
+- **Level 11:** +Magenta (5 colors)
+- **Level 17:** +Cyan (6 colors)
+- **Level 23:** +Orange (7 colors)
+- **Level 27:** +Purple (8 colors)
+
+**Color Palette:** RGB primaries + additional secondaries (configurable via `progression.defaultProfile` in config.json)
 
 ### 3.3 Special Ball Types
 
@@ -511,43 +513,163 @@ As level numbers increase (within same difficulty):
 - Blocking ball spawn rate increases
 - More colors unlock at specific levels (3, 7, 11, 15, 19)
 
-### 6.4 Feature Unlock Schedule
-The following progression reduces early cognitive load and introduces counters before threats.
-All thresholds are configurable via `specialBalls.featureUnlocks` in `config.json`.
+### 6.4 Feature & Piece Unlock Schedule
+All unlocks are now driven by the level progression system (see §6.5). The table below reflects the `defaultProfile` defined in `config.json`. Specials and pieces are introduced progressively to reduce early cognitive load.
 
-| Level Range | Newly Available Special Types | Notes |
-|-------------|-------------------------------|-------|
-| 1–2 | *(none)* | Normal balls only; learn colors and piece movement |
-| 3–4 | `PAINTER_HORIZONTAL` | Introduces painting mechanic — horizontal rows |
-| 5–6 | `PAINTER_VERTICAL` | Adds column painting |
-| 7–8 | `PAINTER_DIAGONAL_NE`, `PAINTER_DIAGONAL_NW` | Completes the painter family |
-| 9+ | `EXPLODING` | Bomb introduced as a counter to blocking balls |
-| 11+ | Blocking balls (separate spawn rules, see §3.3.3) | Rate scales with difficulty |
+#### 6.4.1 Special Orb Unlock Schedule
 
-**Implementation:** `PieceFactory._getUnlockedSpecialTypes(level)` reads `specialBalls.featureUnlocks`
-and returns all types whose configured minimum level ≤ current level.  This filter is applied in all
-three spawn paths:
-- **Interval system** (`_pickIntervalSpecialType`) — forced guarantees only pick unlocked types
-- **Random spawn** (`generateSpecialBall`) — eligible type list is filtered before probability roll
-- **Special bag** (`_getSpecialBagPool`) — bag is built only from unlocked types; bag is discarded on level change
+| Level | Newly Unlocked Special | Notes |
+|-------|------------------------|-------|
+| 1–4 | *(none)* | Normal balls only — learn colors and movement |
+| 5 | `PAINTER_HORIZONTAL` | Introduces the painting mechanic (rows) |
+| 6–8 | — | |
+| 9 | `PAINTER_VERTICAL` | Adds column painting |
+| 10–12 | — | |
+| 13 | `PAINTER_DIAGONAL_NE` | NE-SW diagonal painter |
+| 14 | `PAINTER_DIAGONAL_NW` | NW-SE diagonal painter; completes the painter family |
+| 15–18 | — | |
+| 19+ | `EXPLODING` | Bomb introduced — primary counter to blocking balls |
 
-When no types are unlocked (levels 1–2) the interval counter still ticks, but no forced special is
-injected and random spawns return `null`.
+**Config:** `specialBalls.featureUnlocks` (kept in sync with progression nodes for reference). Progression overrides take precedence when `progression.enabled = true`.
 
-**Default `config.json` values:**
-```json
-"specialBalls": {
-  "featureUnlocks": {
-    "PAINTER_HORIZONTAL":  3,
-    "PAINTER_VERTICAL":    5,
-    "PAINTER_DIAGONAL_NE": 7,
-    "PAINTER_DIAGONAL_NW": 7,
-    "EXPLODING":           9
-  }
-}
-```
+#### 6.4.2 Piece Shape Unlock Schedule
+Core pieces (I, O, T, L, J, S, Z) are available from Level 1. Additional shapes unlock at:
 
-**Color Cap Guidance:** Keep a max of 3–4 colors through roughly Level 12, then ramp to 5–6 once specials are understood. Reserve 7–8 colors for higher difficulties.
+| Level | Piece Added | Description |
+|-------|-------------|-------------|
+| 1 | I, O, T, L, J, S, Z | Core 7 pieces |
+| 4 | V | 3-ball corner |
+| 7 | Line3 | 3-ball straight line |
+| 8 | Plus | 5-ball cross |
+| 12 | U | 5-ball trough/cup |
+| 16 | P | 5-ball fat L |
+| 18 | LongS | 5-ball 3-step staircase |
+| 21 | LongZ | 5-ball mirror staircase |
+| 22 | Y | 5-ball offset spike |
+| 25 | LongL | 6-ball tall L |
+| 28 | LongJ | 6-ball tall reverse L |
+| 29 | Ring | 8-ball hollow square |
+
+**Note:** When `progression.enabled = true`, piece availability is determined by the progression system. The `shapeUnlocks.difficultyN` config keys serve as fallback when progression is disabled.
+
+**Color Cap Guidance:** Keep a max of 3–4 colors through roughly Level 12, then ramp to 5–6 once specials are understood. Reserve 7–8 colors for Level 23+.
+
+---
+
+### 6.5 Level Progression System (Implemented)
+
+The game uses a config-driven progression system to define exactly what rules are active at each level. This replaces the older static `colorUnlocks` and `shapeUnlocks` tables as the primary source of truth when `progression.enabled = true`.
+
+#### 6.5.1 Architecture
+
+`ConfigManager.getProgressionState(mode, difficulty, level)` resolves the active profile through a three-layer merge:
+
+1. **`defaultProfile`** — the base 30-level schedule, shared across all modes and difficulties
+2. **`modeProfiles[mode]`** — per-mode overrides (e.g., ZEN baseline has a longer `lockDelayMs`)
+3. **`modeDifficultyProfiles[mode][difficultyN]`** — per-mode-and-difficulty overrides (e.g., CLASSIC difficulty levels override drop speed baselines)
+
+The resolved profile is then replayed level-by-level from 1 up to the target level, accumulating each change node into a mutable state object that is returned to GameEngine.
+
+#### 6.5.2 Change Node Types
+
+Each level entry in `progression.defaultProfile.levels` has a `primaryChange` field and an optional payload:
+
+| `primaryChange` | Payload Key | Effect |
+|-----------------|-------------|--------|
+| `baseline` | — | Level 1 only; marks the starting ruleset |
+| `speed` | `speed.dropIntervalMultiplier` | Multiplies current drop interval (e.g., 0.95 = 5% faster) |
+| `colorUnlock` | `colorUnlock.add` | Adds one or more colors to the active palette |
+| `pieceUnlock` | `pieceUnlock.add` | Adds one or more piece shapes to the rotation |
+| `specialUnlock` | `specialUnlock.add` | Adds one or more special orb types to spawning |
+| `spawnRateChange` | `spawnRateChange.painterSpawnMultiplierMultiplier` | Multiplies the painter spawn weight |
+
+`progression.enforceSingleMaterialChange = true` validates that each level node contains at most one material change key.
+
+#### 6.5.3 Full 30-Level Default Schedule
+
+| Level | Change | Detail |
+|-------|--------|--------|
+| 1 | baseline | Starting set: I O T L J S Z / Red Green Blue / no specials |
+| 2 | speed ×0.95 | Drop 5% faster |
+| 3 | colorUnlock | +Yellow |
+| 4 | pieceUnlock | +V |
+| 5 | specialUnlock | +PAINTER_HORIZONTAL |
+| 6 | speed ×0.95 | Drop 5% faster |
+| 7 | pieceUnlock | +Line3 |
+| 8 | pieceUnlock | +Plus |
+| 9 | specialUnlock | +PAINTER_VERTICAL |
+| 10 | speed ×0.95 | Drop 5% faster |
+| 11 | colorUnlock | +Magenta |
+| 12 | pieceUnlock | +U |
+| 13 | specialUnlock | +PAINTER_DIAGONAL_NE |
+| 14 | specialUnlock | +PAINTER_DIAGONAL_NW |
+| 15 | speed ×0.95 | Drop 5% faster |
+| 16 | pieceUnlock | +P |
+| 17 | colorUnlock | +Cyan |
+| 18 | pieceUnlock | +LongS |
+| 19 | specialUnlock | +EXPLODING |
+| 20 | speed ×0.95 | Drop 5% faster |
+| 21 | pieceUnlock | +LongZ |
+| 22 | pieceUnlock | +Y |
+| 23 | colorUnlock | +Orange |
+| 24 | spawnRateChange | Painters appear ~10% more often |
+| 25 | pieceUnlock | +LongL |
+| 26 | speed ×0.95 | Drop 5% faster |
+| 27 | colorUnlock | +Purple |
+| 28 | pieceUnlock | +LongJ |
+| 29 | pieceUnlock | +Ring |
+| 30 | speed ×0.95 | Drop 5% faster |
+
+#### 6.5.4 Mode & Difficulty Profile Overrides
+
+- **ZEN baseline:** `lockDelayMs: 550` (more time to adjust after landing)
+- **RISING_TIDE baseline:** Inherits default; difficulty 5 adds `painterSpawnMultiplier: 2.0`
+- **CLASSIC difficulty profiles:** Override `dropIntervalMs` and `lockDelayMs` per difficulty level (D1=850ms drop, D5=250ms drop)
+- **RISING_TIDE difficulty 5:** Overrides `lockDelayMs: 275` and `painterSpawnMultiplier: 2.0`
+
+#### 6.5.5 Integration with PieceFactory and GameEngine
+
+At level start, `GameEngine` calls `getProgressionState()` and calls:
+- `PieceFactory.setProgressionOverrides({ colors, shapes, specialTypes })` — restricts which colors, shapes, and specials can spawn
+- `ScoreManager.setDiagonalMultiplier()` — applies the diagonal score multiplier for this level
+- `PieceFactory.setPainterSpawnMultiplier()` — applies painter frequency weighting
+
+`activeProgressionState` is stored on `GameEngine` and used to resolve `dropInterval` and `lockDelay` values for the game loop. When `getProgressionState()` returns `null` (progression disabled), the engine falls back to the legacy difficulty-based formulas.
+
+---
+
+### 6.6 Between-Level Briefing Overlay (Implemented)
+
+Before gameplay begins each level (and on first load), GameEngine displays a modal overlay summarising what is active and what changed. This pause gives players time to understand new mechanics before pieces start falling.
+
+#### 6.6.1 Trigger Logic
+
+`GameEngine._maybeShowLevelChangesOverlay(previousProfile)` is called after the level is configured but before the game loop starts. The overlay is shown if:
+- The current level is not in the player's "don't show again" list for that level key
+- At least one overlay entry can be generated (entries are always generated, so this is always met when progression data is available)
+
+When shown, the engine pauses (`state = PAUSED`) and waits for the player to dismiss.
+
+#### 6.6.2 Overlay Content
+
+The overlay shows up to 5 information cards:
+
+| Card | Condition | Content |
+|------|-----------|---------|
+| Mode Overview | Level 1 only | Mode name, description, any mode-specific notes (e.g., rows rise every N seconds) |
+| Available Colors | Always | Full active color list with color chips; highlights any colors new this level |
+| Available Pieces | Always | All active piece shapes as miniature previews; new shapes highlighted |
+| Available Special Orbs | Always | Icons + labels for each active special type; description of painter behavior and explosion effect |
+| What Changed | Always | Human-readable summary of deltas from the previous level (speed %, new colors, new pieces, new specials, lock delay, diagonal mult, painter freq) |
+
+If the level has no changes from the previous one, "What Changed" reads: *"No major rule changes from the last level. The active colors, pieces, and special orbs are listed above."*
+
+#### 6.6.3 Dismissal & Persistence
+
+- **"Continue" button** — calls `GameEngine.continueAfterLevelChanges()`, which clears `pendingLevelChangesOverlay` and starts the game loop
+- **"Don't show again for this level" checkbox** — if checked when Continue is clicked, the key `MODE:difficulty:level` is added to `hiddenLevelBriefings` (a `Set` persisted in localStorage under `orbfall_hiddenLevelBriefings`)
+- Once hidden, the briefing for that exact (mode, difficulty, level) combination is never shown again unless localStorage is cleared
+- The overlay can be re-triggered by replaying the level (if the checkbox was not used)
 
 ---
 
@@ -1000,6 +1122,27 @@ All game parameters should be configurable via JSON:
 - Timer hidden in ZEN mode
 - Grid breach handling per mode (success in ZEN, failure in others)
 
+✅ **Level Progression System (Phase 10)**
+- `progression.defaultProfile` in config.json defines a 30-level cumulative schedule
+- Change node types: `speed`, `colorUnlock`, `pieceUnlock`, `specialUnlock`, `spawnRateChange`
+- `modeProfiles` overrides for ZEN and RISING_TIDE baseline parameters
+- `modeDifficultyProfiles` for per-mode per-difficulty baselines (CLASSIC D1–D5, RISING_TIDE D5)
+- `ConfigManager.getProgressionState(mode, difficulty, level)` resolves the full three-layer merged profile
+- `ConfigManager.validateProgressionConfig()` enforces single-change constraint and validates node structure
+- `PieceFactory.setProgressionOverrides()` receives resolved colors, shapes, and special types at level start
+- `progression.enforceSingleMaterialChange` validation flag configurable in config.json
+- Progression supersedes legacy `colorUnlocks` and `shapeUnlocks` tables when enabled
+
+✅ **Between-Level Briefing Overlay (Phase 10)**
+- `GameEngine._maybeShowLevelChangesOverlay()` shown before game loop starts each level
+- Modal pauses the game; `pendingLevelChangesOverlay` flag gates loop start
+- Up to 5 cards: Mode Overview (level 1), Available Colors, Available Pieces, Available Special Orbs, What Changed
+- Color chips, miniature piece shape previews, and special orb tokens rendered in cards
+- "What Changed" card auto-generates human-readable delta text from profile comparison
+- New pieces highlighted with a visual indicator in the piece preview row
+- "Don't show again for this level" checkbox — persisted per `MODE:difficulty:level` key in `orbfall_hiddenLevelBriefings` localStorage
+- `GameEngine.continueAfterLevelChanges()` dismisses overlay and resumes game loop
+
 ✅ **Quality Assurance (Continuous)**
 - 830+ unit tests across 21 test modules
 - Comprehensive test coverage:
@@ -1009,9 +1152,9 @@ All game parameters should be configurable via JSON:
   - **Game Engine:** GameEngine (22 tests including Zen save/load)
 ---
 
-**Document Version:** 2.10  
+**Document Version:** 2.11  
 **Last Updated:** March 2026  
-**Status:** Living Document - Updated through Phase 10 Gameplay + All 4 Phases Complete
+**Status:** Living Document - Updated through Phase 10 Gameplay + Level Progression & Briefing System
 
 ### 14.2 Pending Features (Phase 10 - Documentation & Deployment)
 ⏳ **Documentation**

@@ -26,33 +26,33 @@
 				"1": { "primaryChange": "baseline", "briefing": "Learn the basics with the starter set." },
 				"2": { "primaryChange": "speed", "speed": { "dropIntervalMultiplier": 0.95 }, "briefing": "Drop speed is 5% faster." },
 				"3": { "primaryChange": "colorUnlock", "colorUnlock": { "add": "yellow" }, "briefing": "Yellow orbs are now in play." },
-				"4": { "primaryChange": "lock", "lock": { "lockDelayMultiplier": 0.95 }, "briefing": "Pieces settle 5% faster after landing." },
+				"4": { "primaryChange": "pieceUnlock", "pieceUnlock": { "add": "V" }, "briefing": "A new piece layout is now in rotation." },
 				"5": { "primaryChange": "specialUnlock", "specialUnlock": { "add": "PAINTER_HORIZONTAL" }, "briefing": "Horizontal Painter unlocked." },
 				"6": { "primaryChange": "speed", "speed": { "dropIntervalMultiplier": 0.95 }, "briefing": "Drop speed is 5% faster." },
-				"7": { "primaryChange": "pieceUnlock", "pieceUnlock": { "add": "V" }, "briefing": "A new piece layout is now in rotation." },
-				"8": { "primaryChange": "lock", "lock": { "lockDelayMultiplier": 0.95 }, "briefing": "Pieces settle 5% faster after landing." },
+				"7": { "primaryChange": "pieceUnlock", "pieceUnlock": { "add": "Line3" }, "briefing": "A new piece layout is now in rotation." },
+				"8": { "primaryChange": "pieceUnlock", "pieceUnlock": { "add": "Plus" }, "briefing": "A new piece layout is now in rotation." },
 				"9": { "primaryChange": "specialUnlock", "specialUnlock": { "add": "PAINTER_VERTICAL" }, "briefing": "Vertical Painter unlocked." },
 				"10": { "primaryChange": "speed", "speed": { "dropIntervalMultiplier": 0.95 }, "briefing": "Drop speed is 5% faster." },
 				"11": { "primaryChange": "colorUnlock", "colorUnlock": { "add": "magenta" }, "briefing": "Magenta orbs are now in play." },
-				"12": { "primaryChange": "pieceUnlock", "pieceUnlock": { "add": "Line3" }, "briefing": "A new piece layout is now in rotation." },
+				"12": { "primaryChange": "pieceUnlock", "pieceUnlock": { "add": "U" }, "briefing": "A new piece layout is now in rotation." },
 				"13": { "primaryChange": "specialUnlock", "specialUnlock": { "add": "PAINTER_DIAGONAL_NE" }, "briefing": "Diagonal Painter (NE-SW) unlocked." },
 				"14": { "primaryChange": "specialUnlock", "specialUnlock": { "add": "PAINTER_DIAGONAL_NW" }, "briefing": "Diagonal Painter (NW-SE) unlocked." },
 				"15": { "primaryChange": "speed", "speed": { "dropIntervalMultiplier": 0.95 }, "briefing": "Drop speed is 5% faster." },
-				"16": { "primaryChange": "lock", "lock": { "lockDelayMultiplier": 0.95 }, "briefing": "Pieces settle 5% faster after landing." },
+				"16": { "primaryChange": "pieceUnlock", "pieceUnlock": { "add": "P" }, "briefing": "A new piece layout is now in rotation." },
 				"17": { "primaryChange": "colorUnlock", "colorUnlock": { "add": "cyan" }, "briefing": "Cyan orbs are now in play." },
-				"18": { "primaryChange": "pieceUnlock", "pieceUnlock": { "add": "Plus" }, "briefing": "A new piece layout is now in rotation." },
+				"18": { "primaryChange": "pieceUnlock", "pieceUnlock": { "add": "LongS" }, "briefing": "A new piece layout is now in rotation." },
 				"19": { "primaryChange": "specialUnlock", "specialUnlock": { "add": "EXPLODING" }, "briefing": "Exploding Orbs unlocked." },
 				"20": { "primaryChange": "speed", "speed": { "dropIntervalMultiplier": 0.95 }, "briefing": "Drop speed is 5% faster." },
-				"21": { "primaryChange": "pieceUnlock", "pieceUnlock": { "add": "U" }, "briefing": "A new piece layout is now in rotation." },
-				"22": { "primaryChange": "lock", "lock": { "lockDelayMultiplier": 0.95 }, "briefing": "Pieces settle 5% faster after landing." },
+				"21": { "primaryChange": "pieceUnlock", "pieceUnlock": { "add": "LongZ" }, "briefing": "A new piece layout is now in rotation." },
+				"22": { "primaryChange": "pieceUnlock", "pieceUnlock": { "add": "Y" }, "briefing": "A new piece layout is now in rotation." },
 				"23": { "primaryChange": "colorUnlock", "colorUnlock": { "add": "orange" }, "briefing": "Orange orbs are now in play." },
 				"24": { "primaryChange": "spawnRateChange", "spawnRateChange": { "painterSpawnMultiplierMultiplier": 1.1 }, "briefing": "Painter Orbs appear more often." },
-				"25": { "primaryChange": "pieceUnlock", "pieceUnlock": { "add": "P" }, "briefing": "A new piece layout is now in rotation." },
+				"25": { "primaryChange": "pieceUnlock", "pieceUnlock": { "add": "LongL" }, "briefing": "A new piece layout is now in rotation." },
 				"26": { "primaryChange": "speed", "speed": { "dropIntervalMultiplier": 0.95 }, "briefing": "Drop speed is 5% faster." },
 				"27": { "primaryChange": "colorUnlock", "colorUnlock": { "add": "purple" }, "briefing": "Purple orbs are now in play." },
-				"28": { "primaryChange": "scoreBonusChange", "scoreBonusChange": { "diagonalScoreMultiplierMultiplier": 1.1 }, "briefing": "Diagonal matches now score more points." },
-				"29": { "primaryChange": "pieceUnlock", "pieceUnlock": { "add": "Y" }, "briefing": "A new piece layout is now in rotation." },
-				"30": { "primaryChange": "lock", "lock": { "lockDelayMultiplier": 0.95 }, "briefing": "Pieces settle 5% faster after landing." }
+				"28": { "primaryChange": "pieceUnlock", "pieceUnlock": { "add": "LongJ" }, "briefing": "A new piece layout is now in rotation." },
+				"29": { "primaryChange": "pieceUnlock", "pieceUnlock": { "add": "Ring" }, "briefing": "A new piece layout is now in rotation." },
+				"30": { "primaryChange": "speed", "speed": { "dropIntervalMultiplier": 0.95 }, "briefing": "Drop speed is 5% faster." }
 			}
 		},
 		"modeProfiles": {
@@ -246,7 +246,6 @@
 	},
 	"mission": {
 		"pointsPerGoal": 50,
-		"timeBonusMultiplier": 2,
 		"goalChain": [
 			{ "type": "clearBalls", "label": "Clear {n} orbs", "base": 10, "perDifficulty": 3 },
 			{ "type": "cascade", "label": "Achieve a {n}x cascade", "base": 2, "perDifficulty": 0.2, "max": 5 },
@@ -285,7 +284,7 @@
 		]
 	},
 	"puzzle": {
-		"pieceLimit": 1000,
+		"pieceLimit": 250,
 		"starThresholds": {
 			"baseScore": 5000,
 			"perLevel": 30,
@@ -420,7 +419,7 @@
 	},
 	"pieceShapes": {
 		"I": [
-			[1, 1, 1, 1]
+			[1, 1]
 		],
 		"O": [
 			[1, 1],
@@ -474,10 +473,9 @@
 			[1, 0]
 		],
 		"Y": [
-			[0, 1],
-			[1, 1],
-			[0, 1],
-			[0, 1]
+			[1, 0, 1],
+			[0, 1, 0],
+			[0, 1, 0]
 		],
 		"LongS": [
 			[0, 1, 1],
@@ -492,11 +490,9 @@
 		"LongL": [
 			[1, 0, 0],
 			[1, 0, 0],
-			[1, 0, 0],
 			[1, 1, 1]
 		],
 		"LongJ": [
-			[0, 0, 1],
 			[0, 0, 1],
 			[0, 0, 1],
 			[1, 1, 1]
