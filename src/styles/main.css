@@ -1889,8 +1889,15 @@ body::after {
 	}
 
 	.level-changes-list {
-		flex: 1;
-		min-height: 0;
+		max-height: 36vh;
+	}
+}
+
+/* Short viewport — hide sidebars on small desktop/laptop screens */
+@media (max-height: 900px) {
+	.ball-legend,
+	.stats-panel-container {
+		display: none;
 	}
 }
 
