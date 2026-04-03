@@ -13,7 +13,7 @@ A Tetris-inspired puzzle game where colored ball pieces fall from the top and st
 ## 2. Game Board & Grid
 
 ### 2.1 Grid Specifications
-- **Dimensions:** 15 columns × 22 rows
+- **Dimensions:** 15 columns × 25 rows
 - **Cell Type:** Each cell can contain a ball or be empty
 - **Rendering:** Programmatic graphics (SVG/Canvas), encapsulated for future replacement
 
@@ -685,7 +685,7 @@ If the level has no changes from the previous one, "What Changed" reads: *"No ma
 │  ORB TYPES     │                                  │   NEXT PIECE       │
 │                │                                  │                    │
 │  🔴 Normal     │                                  │   ┌─┬─┬─┬─┐       │
-│    Standard    │      [15 cols × 22 rows]         │   │🔴│🔴│  │  │       │
+│    Standard    │      [15 cols × 25 rows]         │   │🔴│🔴│  │  │       │
 │                │                                  │   ├─┼─┼─┼─┤       │
 │  ⭐ Exploding  │       GAME BOARD                 │   │🔴│🔴│  │  │       │
 │    Destroys    │                                  │   ├─┼─┼─┼─┤       │
@@ -889,11 +889,21 @@ If the level has no changes from the previous one, "What Changed" reads: *"No ma
 
 **Key Format:** `"MODE-difficulty-level"` (e.g., `"CLASSIC-1-5"`, `"ZEN-2-3"`)
 
-**Legacy Migration:** Automatically converts old `"difficulty-level"` format to `"CLASSIC-difficulty-level"` on first loadsettings": {
-    "soundEnabled": true,
-    "volume": 0.7
-  }
-}
+**Legacy Migration:** Automatically converts old `"difficulty-level"` format to `"CLASSIC-difficulty-level"` on first load via `PlayerDataMigrator.migratePlayerData()`.
+
+**All localStorage keys are centralised in `CONSTANTS.STORAGE_KEYS`:**
+
+| Key | Constant | Purpose |
+|-----|----------|---------|
+| `ballMatcher_players` | `PLAYERS` | Player profile map |
+| `ballMatcher_currentPlayer` | `CURRENT_PLAYER` | Active player name |
+| `ballDrop_unlockedLevels` | `LEVEL_UNLOCKS` | LevelManager unlock list |
+| `audioSettings` | `AUDIO_SETTINGS` | Volume/mute state |
+| `orbfall_hiddenLevelBriefings` | `LEVEL_BRIEFINGS` | "Don't show" set for briefing overlay |
+| `orbfall_zen_<player>` | `ZEN_SAVE_PREFIX` + player | Zen save state |
+| `monetization_license` | `MONETIZATION_LICENSE` | License key + instance data |
+| `monetization_ad_free_until` | `MONETIZATION_AD_FREE` | Ad-free sentinel (`"license"`) |
+| `monetization_last_validation` | `MONETIZATION_LAST_VALIDATION` | Timestamp of last API re-validate |
 ```
 
 ---
@@ -1144,17 +1154,17 @@ All game parameters should be configurable via JSON:
 - `GameEngine.continueAfterLevelChanges()` dismisses overlay and resumes game loop
 
 ✅ **Quality Assurance (Continuous)**
-- 830+ unit tests across 21 test modules
+- 874 unit tests across 34 test modules
 - Comprehensive test coverage:
-  - **Core Utilities:** Helpers (20 tests), EventEmitter (18 tests)
-  - **Game Entities:** Ball (31 tests), Piece (36 tests), Grid (88 tests)
-  - **Factories & Managers:** PieceFactory (26 tests), ScoreManager (35 tests), ConfigManager (12 tests), FloatingText (11 tests), GoalManager (10 tests), MissionManager (16 tests), PuzzleManager (15 tests), ShareManager (10 tests), DifficultyModifiers (15 tests)
-  - **Game Engine:** GameEngine (22 tests including Zen save/load)
----
-
-**Document Version:** 2.11  
-**Last Updated:** March 2026  
-**Status:** Living Document - Updated through Phase 10 Gameplay + Level Progression & Briefing System
+  - **Core Utilities:** Helpers (83 tests including computeGoalTarget), EventEmitter (22 tests), Constants (24 tests), DOMHelpers (28 tests)
+  - **New Utilities:** SubscriptionSet (14 tests), PlayerDataMigrator (18 tests)
+  - **Game Entities:** Ball (40 tests), Piece (30 tests), Grid (97 tests)
+  - **Factories & Managers:** PieceFactory (44 tests), ScoreManager (34 tests), ConfigManager (12 tests), FloatingText (23 tests), GoalManager (10 tests), MissionManager (16 tests), PuzzleManager (15 tests), ShareManager (11 tests), DifficultyModifiers (15 tests)
+  - **Game Engine:** GameEngine (23 tests including Zen save/load, mode routing)
+  - **Player System:** PlayerManager (29 tests), StatisticsTracker (48 tests)
+  - **Audio/Visual:** AudioManager (16 tests), AnimationManager (37 tests), ParticleSystem (35 tests)
+  - **Gameplay Systems:** HintManager (12 tests), AdManager (17 tests), MonetizationManager (18 tests)
+  - **Integration:** GameModes (12 tests), SpecialBallInteractions (5 tests), GravityOptimization (8 tests), MobileInteractions (11 tests)
 
 ### 14.2 Pending Features (Phase 10 - Documentation & Deployment)
 ⏳ **Documentation**
@@ -1402,6 +1412,6 @@ self.addEventListener('fetch', event => {
 
 ---
 
-**Document Version:** 3.1  
-**Last Updated:** March 2026  
-**Status:** Living Document - Updated with Monetization, PWA, AdSense & As-Built Corrections
+**Document Version:** 3.2  
+**Last Updated:** April 2026  
+**Status:** Living Document - Updated through Phase 10 + DRY/SOLID refactor, PWA/Analytics/Weather modules
