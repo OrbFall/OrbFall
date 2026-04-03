@@ -38,33 +38,36 @@
 		
 		<!-- Menu Screen -->
 		<div id="menuScreen" class="screen">
-			<div class="player-pill-container">
-				<button id="playerPillToggle" class="player-pill-toggle" type="button" aria-haspopup="true" aria-expanded="false">
-					<span class="player-pill-label">Playing as:</span>
-					<span id="playerCurrentName" class="player-pill-name">Guest</span>
-					<span class="player-pill-caret">▾</span>
-				</button>
-				<div id="playerPillMenu" class="player-pill-menu hidden" role="menu" aria-label="Player menu">
-					<div id="playerMenuList" class="player-menu-list"></div>
-					<button id="playerMenuAdd" class="player-menu-add" type="button">+ Add Player</button>
+			<div class="menu-top-bar">
+				<div class="player-pill-container">
+					<button id="playerPillToggle" class="player-pill-toggle" type="button" aria-haspopup="true" aria-expanded="false">
+						<span class="player-pill-label">Playing as:</span>
+						<span id="playerCurrentName" class="player-pill-name">Guest</span>
+						<span class="player-pill-caret">▾</span>
+					</button>
+					<div id="playerPillMenu" class="player-pill-menu hidden" role="menu" aria-label="Player menu">
+						<div id="playerMenuList" class="player-menu-list"></div>
+						<button id="playerMenuAdd" class="player-menu-add" type="button">+ Add Player</button>
+					</div>
+				</div>
+				<div class="menu-top-bar-right">
+					<div id="menuTopBarRow" class="menu-top-bar-row">
+						<a
+							href="https://discord.gg/2pcnCUkgrK"
+							target="_blank"
+							rel="noopener noreferrer"
+							class="menu-top-pill menu-discord-pill"
+						>Join Discord</a>
+						<!-- Go Ad-Free injected here by MonetizationManager -->
+					</div>
+					<a
+						href="https://github.com/stomli/coding/issues"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="menu-top-pill menu-report-bugs-pill"
+					>Bugs &amp; Suggestions</a>
 				</div>
 			</div>
-			<a
-				href="https://discord.gg/2pcnCUkgrK"
-				target="_blank"
-				rel="noopener noreferrer"
-				class="menu-top-pill menu-discord-pill"
-			>
-				Join Discord
-			</a>
-			<a
-				href="https://github.com/stomli/coding/issues"
-				target="_blank"
-				rel="noopener noreferrer"
-				class="menu-top-pill menu-report-bugs-pill"
-			>
-				Bugs & Suggestions
-			</a>
 			<div class="menu-container">
 				<img src="src/img/Logotrans.png" alt="Orb Fall Logo" class="game-logo">
 

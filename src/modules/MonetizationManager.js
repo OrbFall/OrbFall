@@ -87,7 +87,14 @@ class MonetizationManagerClass {
 		button.className = 'supporter-button';
 		button.textContent = buttonText;
 
-		document.body.appendChild(button);
+		// Inject into the top-bar pill row if available (renders inline with Discord pill)
+		// Fall back to body so the button still appears during ad interstitials
+		const topBarRow = document.getElementById('menuTopBarRow');
+		if (topBarRow) {
+			topBarRow.appendChild(button);
+		} else {
+			document.body.appendChild(button);
+		}
 	}
 
 	/**
