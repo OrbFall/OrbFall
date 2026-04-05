@@ -4,10 +4,14 @@
 	"description": "Orb•Fall: ChromaCrush — color-matching puzzle game (PWA)",
 	"private": true,
 	"scripts": {
+		"build": "node build.js",
+		"build:no-clean": "node build.js --no-clean",
 		"test": "node tests/run-tests.js",
 		"serve": "python -m http.server 8765",
+		"serve:dist": "python -m http.server 8765 --directory dist",
 		"setup": "npm install"
 	},
+	"type": "module",
 	"devDependencies": {
 		"playwright": "^1.58.2"
 	}
