@@ -1,74 +1,60 @@
 /**
  * AnalyticsManager
- * Handles analytics tracking via Mixpanel
+ * Handles analytics tracking via Google Analytics 4 (gtag.js)
  */
 
 class AnalyticsManager {
 	constructor() {
 		this.enabled = false;
-		this.mixpanel = null;
+		this.debug = false;
+		this._playerName = null;
 	}
 
 	/**
-	 * Initialize Mixpanel with your project token
-	 * Get your token from: https://mixpanel.com/project/YOUR_PROJECT_ID/settings
-	 * @param {String} token - Your Mixpanel project token
-	 * @param {Object} options - Configuration options
+	 * Initialize GA4
+	 * @param {String} measurementId - GA4 Measurement ID (G-XXXXXXXXXX)
+	 * @param {Object} options
 	 */
-	init(token, options = {}) {
-		if (!token || typeof mixpanel === 'undefined') {
-			console.warn('AnalyticsManager: Mixpanel not available or no token provided');
+	init(measurementId, options = {}) {
+		if (!measurementId || typeof gtag === 'undefined') {
+			console.warn('AnalyticsManager: gtag not available or no measurement ID provided');
 			return;
 		}
 
 		try {
-			const config = {
-				debug: options.debug || false,
-				track_pageview: false, // We'll track manually
-				persistence: 'localStorage',
-				autocapture: options.autocapture !== undefined ? options.autocapture : true,
-				record_sessions_percent: options.recordSessionsPercent || 0
-			};
-			
-			mixpanel.init(token, config);
-			
-			this.mixpanel = mixpanel;
 			this.enabled = true;
-			this.debug = config.debug;
-			console.log('AnalyticsManager: Initialized successfully', config);
+			this.debug = options.debug || false;
+			if (this.debug) {
+				console.log('AnalyticsManager: Initialized with', measurementId);
+			}
 		} catch (error) {
 			console.error('AnalyticsManager: Failed to initialize', error);
 		}
 	}
 
 	/**
-	 * Identify a player for tracking
-	 * @param {String} playerName - Player identifier
-	 * @param {Object} properties - Additional player properties
+	 * Store the player name for use as a user property on subsequent events.
+	 * GA4 has no "identify" concept — we set a user property instead.
+	 * @param {String} playerName
+	 * @param {Object} properties - ignored (Mixpanel people.set compat shim)
 	 */
 	identifyPlayer(playerName, properties = {}) {
 		if (!this.enabled) return;
-		
+
 		try {
-			// For Guest users, create a unique session ID to differentiate sessions
-			let distinctId = playerName;
-			if (playerName === 'Guest') {
-				// Check if we already have a guest session ID in this session
-				if (!sessionStorage.getItem('guestSessionId')) {
-					// Generate unique guest session ID: Guest_TIMESTAMP_RANDOM
-					const timestamp = Date.now();
-					const random = Math.random().toString(36).substring(2, 9);
-					sessionStorage.setItem('guestSessionId', `Guest_${timestamp}_${random}`);
-				}
-				distinctId = sessionStorage.getItem('guestSessionId');
+			this._playerName = playerName;
+			const isGuest = playerName === 'Guest';
+
+			// Persist a stable anonymous session identifier for guest users
+			if (isGuest && !sessionStorage.getItem('guestSessionId')) {
+				const random = Math.random().toString(36).substring(2, 9);
+				sessionStorage.setItem('guestSessionId', `Guest_${Date.now()}_${random}`);
 			}
-			
-			this.mixpanel.identify(distinctId);
-			this.mixpanel.people.set({
-				$name: playerName,
-				is_guest: playerName === 'Guest',
-				session_id: distinctId,
-				...properties
+
+			gtag('set', 'user_properties', {
+				player_type: isGuest ? 'guest' : 'named',
+				games_played: properties.gamesPlayed ?? undefined,
+				high_score: properties.highScore ?? undefined
 			});
 		} catch (error) {
 			console.error('AnalyticsManager: Failed to identify player', error);
@@ -76,17 +62,20 @@ class AnalyticsManager {
 	}
 
 	/**
-	 * Track a game event
-	 * @param {String} eventName - Name of the event
-	 * @param {Object} properties - Event properties
+	 * Track a custom GA4 event.
+	 * GA4 event names must be snake_case and ≤40 chars.
+	 * @param {String} eventName
+	 * @param {Object} properties
 	 */
 	track(eventName, properties = {}) {
 		if (!this.enabled) return;
-		
+
 		try {
-			this.mixpanel.track(eventName, properties);
+			// Convert "Level Completed" → "level_completed" for GA4 convention
+			const ga4Name = eventName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+			gtag('event', ga4Name, properties);
 			if (this.debug) {
-				console.log('AnalyticsManager: Tracked event:', eventName, properties);
+				console.log('AnalyticsManager: Tracked event:', ga4Name, properties);
 			}
 		} catch (error) {
 			console.error('AnalyticsManager: Failed to track event', error);
@@ -95,22 +84,10 @@ class AnalyticsManager {
 
 	// === Game Events ===
 
-	/**
-	 * Track when a player starts the game
-	 * @param {String} playerName
-	 */
 	trackGameStart(playerName) {
-		this.track('Game Started', {
-			player: playerName
-		});
+		this.track('Game Started', { player: playerName });
 	}
 
-	/**
-	 * Track level start
-	 * @param {Number} difficulty
-	 * @param {Number} level
-	 * @param {String} mode - Game mode (CLASSIC, ZEN, GAUNTLET, RISING_TIDE)
-	 */
 	trackLevelStart(difficulty, level, mode = 'CLASSIC') {
 		this.track('Level Started', {
 			difficulty,
@@ -120,15 +97,6 @@ class AnalyticsManager {
 		});
 	}
 
-	/**
-	 * Track level completion
-	 * @param {Number} difficulty
-	 * @param {Number} level
-	 * @param {Number} score
-	 * @param {Number} timeElapsed - Time in seconds
-	 * @param {String} mode - Game mode
-	 * @param {Object} stats - Additional statistics
-	 */
 	trackLevelComplete(difficulty, level, score, timeElapsed, mode, stats = {}) {
 		this.track('Level Completed', {
 			difficulty,
@@ -141,16 +109,6 @@ class AnalyticsManager {
 		});
 	}
 
-	/**
-	 * Track level failure
-	 * @param {Number} difficulty
-	 * @param {Number} level
-	 * @param {Number} score
-	 * @param {Number} timeElapsed - Time in seconds
-	 * @param {String} reason - Reason for failure (e.g., 'out_of_space', 'no_moves')
-	 * @param {String} mode - Game mode
-	 * @param {Object} stats - Additional statistics
-	 */
 	trackLevelFailed(difficulty, level, score, timeElapsed, reason, mode, stats = {}) {
 		this.track('Level Failed', {
 			difficulty,
@@ -164,12 +122,6 @@ class AnalyticsManager {
 		});
 	}
 
-	/**
-	 * Track special ball usage
-	 * @param {String} ballType - Type of special ball (bomb, painter, etc.)
-	 * @param {Number} difficulty
-	 * @param {Number} level
-	 */
 	trackSpecialBallUsed(ballType, difficulty, level) {
 		this.track('Special Ball Used', {
 			ball_type: ballType,
@@ -179,13 +131,6 @@ class AnalyticsManager {
 		});
 	}
 
-	/**
-	 * Track cascade events (combos)
-	 * @param {Number} cascadeLevel - How many cascades in the chain
-	 * @param {Number} difficulty
-	 * @param {Number} level
-	 * @param {Number} points - Points earned from cascade
-	 */
 	trackCascade(cascadeLevel, difficulty, level, points) {
 		this.track('Cascade', {
 			cascade_level: cascadeLevel,
@@ -196,59 +141,33 @@ class AnalyticsManager {
 		});
 	}
 
-	/**
-	 * Track player progression milestones
-	 * @param {String} milestone - Type of milestone (e.g., 'first_win', 'difficulty_unlocked')
-	 * @param {Object} properties - Additional properties
-	 */
 	trackMilestone(milestone, properties = {}) {
-		this.track('Milestone Reached', {
-			milestone,
-			...properties
-		});
+		this.track('Milestone Reached', { milestone, ...properties });
 	}
 
-	/**
-	 * Track settings changes
-	 * @param {String} setting - Setting name
-	 * @param {*} value - New value
-	 */
 	trackSettingChanged(setting, value) {
-		this.track('Setting Changed', {
-			setting,
-			value
-		});
+		this.track('Setting Changed', { setting, value });
 	}
 
-	/**
-	 * Track errors
-	 * @param {String} errorType - Type of error
-	 * @param {String} message - Error message
-	 * @param {Object} context - Additional context
-	 */
 	trackError(errorType, message, context = {}) {
-		this.track('Error Occurred', {
-			error_type: errorType,
-			message,
-			...context
-		});
+		this.track('Error Occurred', { error_type: errorType, message, ...context });
 	}
 
 	/**
-	 * Update player profile with cumulative stats
-	 * @param {Object} stats - Player statistics
+	 * Update player profile stats as GA4 user properties.
+	 * GA4 does not have a Mixpanel-style people.set; we use gtag user_properties instead.
+	 * @param {Object} stats
 	 */
 	updatePlayerProfile(stats) {
 		if (!this.enabled) return;
-		
+
 		try {
-			this.mixpanel.people.set({
+			gtag('set', 'user_properties', {
 				games_played: stats.gamesPlayed,
 				total_score: stats.totalScore,
 				high_score: stats.highScore,
 				levels_completed: stats.levelsCompleted,
-				highest_level: stats.highestLevel,
-				last_played: new Date().toISOString()
+				highest_level: stats.highestLevel
 			});
 		} catch (error) {
 			console.error('AnalyticsManager: Failed to update player profile', error);
@@ -256,18 +175,11 @@ class AnalyticsManager {
 	}
 
 	/**
-	 * Increment a player property (useful for counting events)
-	 * @param {String} property - Property name
-	 * @param {Number} amount - Amount to increment by (default 1)
+	 * No-op shim kept for call-site compatibility.
+	 * GA4 has no server-side increment; callers can track individual events instead.
 	 */
-	incrementPlayerProperty(property, amount = 1) {
-		if (!this.enabled) return;
-		
-		try {
-			this.mixpanel.people.increment(property, amount);
-		} catch (error) {
-			console.error('AnalyticsManager: Failed to increment property', error);
-		}
+	incrementPlayerProperty(_property, _amount = 1) {
+		// Not supported in GA4 — individual events carry the value
 	}
 }
 

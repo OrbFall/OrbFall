@@ -29,11 +29,9 @@ import { ANALYTICS_CONFIG } from './config/analytics.config.js';
 document.addEventListener('DOMContentLoaded', async () => {
 	try {
 		// Initialize analytics
-		if (ANALYTICS_CONFIG.enabled && ANALYTICS_CONFIG.mixpanelToken) {
-			AnalyticsManager.init(ANALYTICS_CONFIG.mixpanelToken, {
-				debug: ANALYTICS_CONFIG.debug,
-				autocapture: ANALYTICS_CONFIG.autocapture,
-				recordSessionsPercent: ANALYTICS_CONFIG.recordSessionsPercent
+		if (ANALYTICS_CONFIG.enabled && ANALYTICS_CONFIG.measurementId) {
+			AnalyticsManager.init(ANALYTICS_CONFIG.measurementId, {
+				debug: ANALYTICS_CONFIG.debug
 			});
 			
 			// Identify current player
