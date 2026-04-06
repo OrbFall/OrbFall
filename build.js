@@ -95,6 +95,18 @@ if (patchedSw === sw) {
 	ok('service-worker.js paths rewritten to relative form');
 }
 
+// Extract CACHE_VERSION and stamp it into config.json
+const versionMatch = sw.match(/CACHE_VERSION\s*=\s*'([^']+)'/);
+if (versionMatch) {
+	const configPath = join(OUT, 'config.json');
+	const cfg = JSON.parse(readFileSync(configPath, 'utf8'));
+	cfg.buildVersion = versionMatch[1];
+	writeFileSync(configPath, JSON.stringify(cfg, null, '\t'), 'utf8');
+	ok(`config.json buildVersion set to ${versionMatch[1]}`);
+} else {
+	warn('Could not extract CACHE_VERSION from service-worker.js — buildVersion not stamped');
+}
+
 // ── manifest.json: patch start_url and scope ─────────────────────────────────
 
 console.log('\n[4/4] Patching manifest.json for /orbfall sub-path…');

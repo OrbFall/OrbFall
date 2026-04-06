@@ -1,4 +1,5 @@
 {
+	"buildVersion": "orbfall-v1.0.80",
 	"game": {
 		"gridRows": 22,
 		"gridCols": 15,
