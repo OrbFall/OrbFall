@@ -1986,6 +1986,8 @@ body::after {
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
+	padding: 1.5rem;
+	box-sizing: border-box;
 }
 
 .interstitial-label {
@@ -1997,8 +1999,10 @@ body::after {
 }
 
 .interstitial-ad-container {
-	flex: 1;
 	width: 100%;
+	max-width: 600px;
+	flex: 1;
+	max-height: 80vh;
 	background: #222;
 	border-radius: 8px;
 	overflow: hidden;
