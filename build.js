@@ -160,6 +160,14 @@ let manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
 manifest.start_url = '/orbfall/';
 manifest.scope     = '/orbfall/';
 
+// Patch icon src paths: /src/img/... -> /orbfall/src/img/...
+if (Array.isArray(manifest.icons)) {
+	manifest.icons = manifest.icons.map(icon => ({
+		...icon,
+		src: icon.src?.replace(/^\//, '/orbfall/')
+	}));
+}
+
 if (Array.isArray(manifest.shortcuts)) {
 	manifest.shortcuts = manifest.shortcuts.map(s => ({
 		...s,
