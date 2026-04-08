@@ -48,4 +48,4 @@ jobs:
         run: |
           aws cloudfront create-invalidation \
             --distribution-id E1FSXOLSCUJUU3 \
-            --paths "/orbfall" "/orbfall/*"
+            --paths "/orbfall/*" "/index.html"
