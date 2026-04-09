@@ -13,6 +13,9 @@
 	},
 	"type": "module",
 	"devDependencies": {
-		"playwright": "^1.58.2"
+		"clean-css": "^5.3.3",
+		"html-minifier-terser": "^7.2.0",
+		"playwright": "^1.58.2",
+		"terser": "^5.46.1"
 	}
 }

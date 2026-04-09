@@ -12,10 +12,13 @@
  * Output: dist/orbfall/  (mirrors the production URL path)
  */
 
-import { cpSync, mkdirSync, rmSync, existsSync, readFileSync, writeFileSync } from 'fs';
+import { cpSync, mkdirSync, readdirSync, rmSync, existsSync, readFileSync, writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
+import { minify as jsMinify } from 'terser';
+import CleanCSS from 'clean-css';
+import { minify as htmlMinify } from 'html-minifier-terser';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = __dirname;
@@ -42,7 +45,7 @@ const VERSION = buildVersion();
 // Update CACHE_VERSION in source service-worker.js and buildVersion in source
 // config.json so the repo always reflects the last-built version.
 
-console.log(`\n[0/5] Stamping version ${VERSION} into source files…`);
+console.log(`\n[0/6] Stamping version ${VERSION} into source files…`);
 
 const srcSwPath  = join(ROOT, 'service-worker.js');
 const srcSwText  = readFileSync(srcSwPath, 'utf8');
@@ -96,7 +99,7 @@ function copy(src, destRel) {
 // ── Clean ─────────────────────────────────────────────────────────────────────
 
 if (!noClean) {
-	console.log('\n[1/5] Cleaning dist/orbfall/…');
+	console.log('\n[1/6] Cleaning dist/orbfall/…');
 	if (existsSync(join(ROOT, 'dist'))) {
 		rmSync(join(ROOT, 'dist'), { recursive: true, force: true });
 	}
@@ -107,7 +110,7 @@ mkdirSync(OUT, { recursive: true });
 
 // ── Copy static files ─────────────────────────────────────────────────────────
 
-console.log('\n[2/5] Copying static assets…');
+console.log('\n[2/6] Copying static assets…');
 
 // Root HTML + config
 copy('index.html',       'index.html');
@@ -131,7 +134,7 @@ copy('src', 'src');
 // We rewrite every '/index.html' → './index.html' etc. in the output copy only
 // (the source file is left unchanged).
 
-console.log('\n[3/5] Patching service-worker.js paths for /orbfall sub-path…');
+console.log('\n[3/6] Patching service-worker.js paths for /orbfall sub-path…');
 
 const swPath = join(OUT, 'service-worker.js');
 let sw = readFileSync(swPath, 'utf8');
@@ -153,7 +156,7 @@ if (patchedSw === sw) {
 
 // ── manifest.json: patch start_url and scope ─────────────────────────────────
 
-console.log('\n[4/5] Patching manifest.json for /orbfall sub-path…');
+console.log('\n[4/6] Patching manifest.json for /orbfall sub-path…');
 
 const manifestPath = join(OUT, 'manifest.json');
 let manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
@@ -179,7 +182,84 @@ if (Array.isArray(manifest.shortcuts)) {
 writeFileSync(manifestPath, JSON.stringify(manifest, null, '\t'), 'utf8');
 ok('manifest.json start_url and scope set to /orbfall/');
 
-console.log('\n[5/5] Done.');
+// ── Minify ───────────────────────────────────────────────────────────────────
+
+console.log('\n[5/6] Minifying JS, CSS, and HTML…');
+
+// Recursively collect all files with a given extension under dir
+function walkFiles(dir, ext) {
+	const results = [];
+	for (const entry of readdirSync(dir, { withFileTypes: true })) {
+		const full = join(dir, entry.name);
+		if (entry.isDirectory()) {
+			results.push(...walkFiles(full, ext));
+		} else if (entry.name.endsWith(ext)) {
+			results.push(full);
+		}
+	}
+	return results;
+}
+
+// ── JS ──
+let jsCount = 0, jsSaved = 0;
+for (const file of walkFiles(OUT, '.js')) {
+	const src = readFileSync(file, 'utf8');
+	try {
+		const result = await jsMinify(src, {
+			module: true,
+			compress: true,
+			mangle: { toplevel: false },
+		});
+		if (result.code) {
+			jsSaved += src.length - result.code.length;
+			writeFileSync(file, result.code, 'utf8');
+			jsCount++;
+		}
+	} catch (e) {
+		warn(`JS minify failed: ${file.replace(OUT, '')}: ${e.message}`);
+	}
+}
+ok(`${jsCount} JS files  — saved ${(jsSaved / 1024).toFixed(1)} KB`);
+
+// ── CSS ──
+let cssCount = 0, cssSaved = 0;
+const cssMinifier = new CleanCSS({ level: 2 });
+for (const file of walkFiles(OUT, '.css')) {
+	const src = readFileSync(file, 'utf8');
+	const result = cssMinifier.minify(src);
+	if (result.errors.length === 0) {
+		cssSaved += src.length - result.styles.length;
+		writeFileSync(file, result.styles, 'utf8');
+		cssCount++;
+	} else {
+		warn(`CSS minify failed: ${file.replace(OUT, '')}: ${result.errors.join(', ')}`);
+	}
+}
+ok(`${cssCount} CSS files — saved ${(cssSaved / 1024).toFixed(1)} KB`);
+
+// ── HTML ──
+let htmlCount = 0, htmlSaved = 0;
+const htmlMinifyOpts = {
+	collapseWhitespace: true,
+	removeComments: true,
+	removeRedundantAttributes: true,
+	minifyCSS: true,
+	minifyJS: true,
+};
+for (const file of walkFiles(OUT, '.html')) {
+	const src = readFileSync(file, 'utf8');
+	try {
+		const minified = await htmlMinify(src, htmlMinifyOpts);
+		htmlSaved += src.length - minified.length;
+		writeFileSync(file, minified, 'utf8');
+		htmlCount++;
+	} catch (e) {
+		warn(`HTML minify failed: ${file.replace(OUT, '')}: ${e.message}`);
+	}
+}
+ok(`${htmlCount} HTML files — saved ${(htmlSaved / 1024).toFixed(1)} KB`);
+
+console.log('\n[6/6] Done.');
 
 // ── Summary ───────────────────────────────────────────────────────────────────
 
