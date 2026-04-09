@@ -264,8 +264,6 @@ console.log('\n[6/6] Done.');
 // ── Summary ───────────────────────────────────────────────────────────────────
 
 console.log(`\n✅  Build complete → dist/orbfall/`);
-console.log(`\n   ── S3 upload (CRITICAL: note the trailing /orbfall/ prefix) ──`);
-console.log(`   aws s3 sync dist/orbfall/ s3://YOUR_BUCKET/orbfall/ --delete`);
-console.log(`\n   ⚠  Do NOT sync to s3://YOUR_BUCKET/ — that puts files at the bucket`);
-console.log(`      root and breaks /orbfall/ routing (S3 error-doc fallback serves`);
-console.log(`      root index.html for any missing key under orbfall/).\n`);
+console.log(`\n   ── S3 upload ──`);
+console.log(`   aws s3 sync dist/orbfall/ s3://gusto4tech-prod-orbfall-static/ --delete`);
+console.log(`\n   CloudFront origin maps bucket root → gusto4tech.com/orbfall/\n`);

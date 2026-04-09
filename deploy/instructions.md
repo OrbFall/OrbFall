@@ -23,14 +23,12 @@ Output goes to `dist/orbfall/`. The build script:
 ### ⚠️ Critical: upload to the `orbfall/` prefix, NOT the bucket root
 
 ```bash
-aws s3 sync dist/orbfall/ s3://YOUR_BUCKET/orbfall/ --delete
+aws s3 sync dist/orbfall/ s3://gusto4tech-prod-orbfall-static/ --delete
 ```
 
-**Do NOT run:**
-```bash
-# WRONG — puts files at bucket root, breaks /orbfall/ routing
-aws s3 sync dist/orbfall/ s3://YOUR_BUCKET/ --delete
-```
+> The CloudFront distribution's origin path maps the bucket root to `/orbfall/`,
+> so files sync to `s3://gusto4tech-prod-orbfall-static/` (bucket root) and are
+> served at `gusto4tech.com/orbfall/`.
 
 Why this matters: S3 static website hosting uses `index.html` as the error
 document. If game files are at the bucket root instead of under `orbfall/`,
