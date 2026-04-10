@@ -1270,7 +1270,7 @@ body::after {
 
 .overlay-content {
 	background: linear-gradient(135deg, var(--color-surface), var(--color-surface-mid));
-	padding: 3rem;
+	padding: 2.25rem;
 	border-radius: 10px;
 	border: 2px solid var(--color-game-green);
 	text-align: center;
@@ -1294,7 +1294,7 @@ body::after {
 	gap: 1rem;
 	justify-content: center;
 	flex-wrap: wrap;
-	margin-top: 1.5rem;
+	margin-top: 1.15rem;
 }
 
 /* Share Button */
@@ -1378,7 +1378,7 @@ body::after {
 
 #levelCompleteOverlay .overlay-content {
 	min-width: 360px;
-	padding: 2.25rem;
+	padding: 1.75rem;
 }
 
 /* Settings overlay — constrain width so it doesn't overflow viewport */
@@ -1388,8 +1388,8 @@ body::after {
 }
 
 #settingsOverlay .overlay-content h2 {
-	font-size: 1.25rem;
-	margin-bottom: 1rem;
+	font-size: 1rem;
+	margin-bottom: 0.85rem;
 }
 
 .settings-footer {
@@ -1606,7 +1606,7 @@ body::after {
 
 /* Settings */
 .settings-options {
-	margin: 2rem 0;
+	margin: 1.5rem 0;
 }
 
 .setting-item {
@@ -1985,9 +1985,7 @@ body::after {
 	}
 
 	#settingsOverlay .overlay-content {
-		width: unset;
-		max-width: calc(100vw - 2rem);
-		padding: 2rem 1.5rem;
+		padding: 1.25rem 1rem;
 	}
 
 	#levelCompleteOverlay .overlay-content {
