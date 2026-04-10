@@ -1593,6 +1593,7 @@ body::after {
 	display: flex;
 	align-items: center;
 	gap: 0.5rem;
+	max-width: 50%;
 }
 
 .setting-icon {
@@ -1850,7 +1851,8 @@ body::after {
 	}
 	
 	.btn-primary,
-	.btn-secondary {
+	.btn-secondary,
+	.btn-danger {
 		padding: 0.6rem 1.2rem;
 		font-size: 0.9rem;
 	}
@@ -1950,6 +1952,12 @@ body::after {
 		width: 92vw;
 		max-width: 92vw;
 		padding: 2rem;
+	}
+
+	#settingsOverlay .overlay-content {
+		width: unset;
+		max-width: calc(100vw - 2rem);
+		padding: 2rem 1.5rem;
 	}
 
 	#levelCompleteOverlay .overlay-content {
