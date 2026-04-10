@@ -1957,6 +1957,18 @@ body::after {
 		padding: 0.35rem;
 		order: 2;
 	}
+
+	#gameScreen {
+		padding: 0.4rem 0.5rem;
+	}
+
+	.hud {
+		margin-bottom: 0.35rem;
+	}
+
+	.game-container {
+		gap: 0.35rem;
+	}
 	
 	.controls-keys .controls-text {
 		display: none;
