@@ -159,7 +159,7 @@ class Renderer {
 	 */
 	renderGhostPiece(piece, x, y) {
 		const shape = piece.getShape();
-		const ballRadius = ConfigManager.get('rendering.ballRadius', 20);
+		const ballRadius = this.cellSize / 2;
 		
 		// Draw each ball position as outline
 		iterateShapeCells(shape, (row, col) => {
