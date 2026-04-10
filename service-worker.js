@@ -12,7 +12,7 @@
  * ============================================================================
  */
 
-const CACHE_VERSION = 'orbfall-v26.0410.1647';
+const CACHE_VERSION = 'orbfall-v26.0410.1722';
 const CACHE_NAME = CACHE_VERSION;
 
 /**
@@ -81,9 +81,6 @@ const CORE_ASSETS = [
 	'/src/img/icon-512.png',
 	'/src/img/icon-512-maskable.png',
 	'/src/img/Logotrans.png',
-	'/src/img/GSTTrans.png',
-	'/src/img/GSTTransSm.png',
-	'/src/img/logo1.png'
 ];
 
 /**

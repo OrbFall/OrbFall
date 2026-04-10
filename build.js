@@ -123,7 +123,14 @@ copy('ads.txt',          'ads.txt');
 copy('service-worker.js','service-worker.js');
 
 // Source tree (JS modules, CSS, images, config sub-dir)
+// Note: src/img/_archive is excluded — those files are not part of the build
 copy('src', 'src');
+
+// Remove archive folder from dist if copied
+const archivePath = join(OUT, 'src', 'img', '_archive');
+if (existsSync(archivePath)) {
+	rmSync(archivePath, { recursive: true, force: true });
+}
 
 // ── Patch service-worker.js paths ────────────────────────────────────────────
 //
@@ -264,6 +271,4 @@ console.log('\n[6/6] Done.');
 // ── Summary ───────────────────────────────────────────────────────────────────
 
 console.log(`\n✅  Build complete → dist/orbfall/`);
-console.log(`\n   ── S3 upload ──`);
-console.log(`   aws s3 sync dist/orbfall/ s3://gusto4tech-prod-orbfall-static/ --delete`);
-console.log(`\n   CloudFront origin maps bucket root → gusto4tech.com/orbfall/\n`);
+console.log(`\n   Deploy via: git push  (CI handles S3 sync + CloudFront invalidation)\n`);
