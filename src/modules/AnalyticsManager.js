@@ -8,6 +8,75 @@ class AnalyticsManager {
 		this.enabled = false;
 		this.debug = false;
 		this._playerName = null;
+		this._gameContext = { game_mode: null, difficulty: null, level: null };
+	}
+
+	/**
+	 * Update the current game context — automatically included on all subsequent events.
+	 * Call whenever mode, difficulty, or level changes.
+	 */
+	setGameContext(mode, difficulty, level) {
+		this._gameContext = {
+			game_mode: mode ?? this._gameContext.game_mode,
+			difficulty: difficulty ?? this._gameContext.difficulty,
+			level: level ?? this._gameContext.level,
+		};
+	}
+
+	/**
+	 * Capture viewport/screen dimensions as GA4 user properties and
+	 * return them as a plain object for inclusion in events.
+	 */
+	_getViewportProps() {
+		const ua = navigator.userAgent;
+		const browser = /Edg\//.test(ua) ? 'Edge'
+			: /Chrome\//.test(ua) ? 'Chrome'
+			: /Firefox\//.test(ua) ? 'Firefox'
+			: /Safari\//.test(ua) ? 'Safari'
+			: 'Other';
+		const device_type = /Mobi|Android/i.test(ua) ? 'mobile'
+			: /Tablet|iPad/i.test(ua) ? 'tablet'
+			: 'desktop';
+		return {
+			viewport_width: window.innerWidth,
+			viewport_height: window.innerHeight,
+			screen_width: window.screen?.width ?? null,
+			screen_height: window.screen?.height ?? null,
+			device_pixel_ratio: window.devicePixelRatio ?? null,
+			is_mobile: window.innerWidth < 768,
+			browser,
+			device_type,
+		};
+	}
+
+	/**
+	 * Set viewport dimensions as GA4 user properties so they appear
+	 * in audience/user-level reports, and attach a resize listener
+	 * that updates them if the window is resized.
+	 */
+	trackViewport() {
+		if (!this.enabled) return;
+
+		const report = () => {
+			const props = this._getViewportProps();
+			gtag('set', 'user_properties', {
+				viewport_width: props.viewport_width,
+				viewport_height: props.viewport_height,
+				screen_width: props.screen_width,
+				screen_height: props.screen_height,
+				device_pixel_ratio: props.device_pixel_ratio,
+				is_mobile: props.is_mobile,
+			});
+			if (this.debug) console.log('AnalyticsManager: viewport', props);
+		};
+
+		report();
+		// Update on resize (debounced)
+		let _resizeTimer;
+		window.addEventListener('resize', () => {
+			clearTimeout(_resizeTimer);
+			_resizeTimer = setTimeout(report, 500);
+		}, { passive: true });
 	}
 
 	/**
@@ -24,6 +93,19 @@ class AnalyticsManager {
 		try {
 			this.enabled = true;
 			this.debug = options.debug || false;
+
+			// Disable GA4 enhanced measurement events that generate noise.
+			// scroll, click, outbound clicks etc. are meaningless for a game —
+			// our own custom events carry all the useful context.
+			gtag('config', measurementId, {
+				send_page_view: true,
+				allow_google_signals: false,
+				// Suppress auto-collected events we don't want
+				// (user_engagement and session_start still fire automatically and
+				// cannot be disabled, but scroll/click can be suppressed via
+				// enhanced measurement settings in the GA4 console)
+			});
+
 			if (this.debug) {
 				console.log('AnalyticsManager: Initialized with', measurementId);
 			}
@@ -73,13 +155,48 @@ class AnalyticsManager {
 		try {
 			// Convert "Level Completed" → "level_completed" for GA4 convention
 			const ga4Name = eventName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-			gtag('event', ga4Name, properties);
+			gtag('event', ga4Name, {
+				// All game events carry these context fields so they're clearly
+				// distinguishable from GA4's own auto-collected events in reports
+				event_category: 'orbfall_game',
+				player_name: this._playerName ?? 'unknown',
+				...this._gameContext,
+				...this._getViewportProps(),
+				...properties
+			});
 			if (this.debug) {
 				console.log('AnalyticsManager: Tracked event:', ga4Name, properties);
 			}
 		} catch (error) {
 			console.error('AnalyticsManager: Failed to track event', error);
 		}
+	}
+
+	/**
+	 * Attach a single delegated listener that fires a button_click event for
+	 * every <button> or [role="button"] click. Call once after init().
+	 * Uses the element's data-analytics-label, aria-label, textContent, or id
+	 * — in that priority order — as the button name.
+	 */
+	trackButtonClicks() {
+		if (!this.enabled) return;
+
+		document.addEventListener('click', (e) => {
+			const btn = e.target.closest('button, [role="button"], .btn-primary, .btn-secondary, .btn-danger');
+			if (!btn) return;
+
+			const label =
+				btn.dataset.analyticsLabel ||
+				btn.getAttribute('aria-label') ||
+				btn.textContent?.trim().replace(/\s+/g, ' ').substring(0, 50) ||
+				btn.id ||
+				'unknown';
+
+			this.track('button_click', {
+				button_label: label,
+				button_id: btn.id || null,
+			});
+		}, { passive: true });
 	}
 
 	// === Game Events ===
@@ -89,6 +206,7 @@ class AnalyticsManager {
 	}
 
 	trackLevelStart(difficulty, level, mode = 'CLASSIC') {
+		this.setGameContext(mode, difficulty, level);
 		this.track('Level Started', {
 			difficulty,
 			level,

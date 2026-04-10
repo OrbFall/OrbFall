@@ -33,6 +33,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 			AnalyticsManager.init(ANALYTICS_CONFIG.measurementId, {
 				debug: ANALYTICS_CONFIG.debug
 			});
+			AnalyticsManager.trackViewport();
+			AnalyticsManager.trackButtonClicks();
 			
 			// Identify current player
 			const currentPlayer = PlayerManager.getCurrentPlayerData();
