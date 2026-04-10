@@ -1583,7 +1583,7 @@ body::after {
 }
 
 .setting-item label {
-	font-size: 1.2rem;
+	font-size: 0.95rem;
 	color: #ffffff;
 	display: flex;
 	align-items: center;
@@ -1635,6 +1635,13 @@ body::after {
 	cursor: pointer;
 	border: none;
 	box-shadow: 0 0 10px rgba(var(--color-game-green-rgb), 0.5);
+}
+
+.setting-item .btn-primary,
+.setting-item .btn-secondary,
+.setting-item .btn-danger {
+	font-size: 0.95rem;
+	padding: 0.5rem 1.2rem;
 }
 
 #volumeValue,
