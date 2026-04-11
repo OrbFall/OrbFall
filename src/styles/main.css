@@ -1378,7 +1378,13 @@ body::after {
 
 #levelCompleteOverlay .overlay-content {
 	min-width: 360px;
+	max-width: 520px;
 	padding: 1.75rem;
+}
+
+#levelChangesOverlay .overlay-content {
+	width: min(520px, calc(100vw - 2rem));
+	max-width: 520px;
 }
 
 /* Settings overlay — constrain width so it doesn't overflow viewport */
@@ -1421,8 +1427,9 @@ body::after {
 }
 
 .level-changes-content {
+	width: min(520px, calc(100vw - 2rem));
 	min-width: 380px;
-	max-width: 640px;
+	max-width: 520px;
 	padding: 1.5rem;
 	height: 90vh;
 	display: flex;
