@@ -209,6 +209,66 @@ class WeatherBackgroundClass {
 		const cyclePos = ((elapsed % SYNODIC_DAYS) + SYNODIC_DAYS) % SYNODIC_DAYS;
 		const phase = Math.floor((cyclePos / SYNODIC_DAYS) * 8); // 0-7 phases
 		moon.setAttribute('data-phase', phase);
+
+		// Apply phase shadow overlay using a pseudo-element trick via inline style.
+		// We use a dark inset box-shadow on a ::before overlay to mask the unlit portion.
+		// Phases: 0=new, 1=waxing crescent, 2=first quarter, 3=waxing gibbous,
+		//         4=full,  5=waning gibbous,  6=last quarter,  7=waning crescent
+		//
+		// Strategy: place a dark overlay circle whose horizontal offset represents
+		// how much of the moon is in shadow.  Negative X = shadow from left (waning),
+		// positive X = shadow from right (waxing).
+		//
+		// moonRadius = 40px (half of 80px).  The shadow circle matches that size.
+		// offset range: -80px (fully lit from right) to +80px (fully lit from left).
+		const MOON_R = 40; // px — half of the 80px element
+		const applyMoonPhase = (el, p) => {
+			// Fraction of cycle: 0 = new moon, 0.5 = full moon
+			const frac = cyclePos / SYNODIC_DAYS; // 0..1
+			const angle = frac * 2 * Math.PI; // radians, 0 = new, π = full
+
+			// Illumination fraction (0 = new, 1 = full)
+			const illum = (1 - Math.cos(angle)) / 2;
+
+			if (illum < 0.02) {
+				// New moon — nearly invisible
+				el.style.opacity = '0.08';
+				el.style.boxShadow = 'none';
+				return;
+			}
+			if (illum > 0.98) {
+				// Full moon — no overlay needed, default CSS applies
+				el.style.opacity = '1';
+				return;
+			}
+
+			// Amount of horizontal shift for the shadow disc:
+			// Waxing (frac < 0.5): shadow covers left side → positive offsetX
+			// Waning (frac > 0.5): shadow covers right side → negative offsetX
+			// At quarter (frac=0.25 / 0.75) shadow edge sits at centre (offset = 0).
+			// At new moon (frac→0) shadow covers entire disc (offset = MOON_R).
+			// At full moon (frac→0.5) shadow is gone (offset = -MOON_R).
+			let offsetX;
+			const halfCycle = frac < 0.5;
+			if (halfCycle) {
+				// Waxing: 0→0.5 maps offsetX from +MOON_R → -MOON_R
+				offsetX = MOON_R - frac * 4 * MOON_R;
+			} else {
+				// Waning: 0.5→1 maps offsetX from -MOON_R → +MOON_R
+				offsetX = -MOON_R + (frac - 0.5) * 4 * MOON_R;
+			}
+
+			// Dark overlay via an inset box-shadow with spread matching the disc.
+			// We wrap the moon in a container that clips overflow so the shadow
+			// doesn't bleed outside the circle.
+			el.style.overflow = 'hidden';
+			// Inner shadow trick: a large inset shadow shifted horizontally
+			const shadowColor = 'rgba(10, 15, 40, 0.92)';
+			const spread = MOON_R; // covers half the disc at quarter phase
+			el.style.boxShadow = `inset ${offsetX}px 0 0 ${spread}px ${shadowColor}, 0 0 40px rgba(255,255,255,0.4), 0 0 80px rgba(255,255,255,0.2)`;
+		};
+
+		applyMoonPhase(moon, phase);
 		
 		container.appendChild(moon);
 	}
