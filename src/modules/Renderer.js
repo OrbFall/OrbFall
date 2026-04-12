@@ -39,19 +39,21 @@ class Renderer {
 		const gridCols = ConfigManager.get('game.gridCols', CONSTANTS.GRID_COLS);
 		let ballRadius = ConfigManager.get('rendering.ballRadius', 20);
 
-		// On mobile, scale cell size to fit viewport without overflowing.
+		// Scale cell size to fit viewport on any screen size.
 		// Use visualViewport height when available (accounts for browser chrome on Android/iOS).
 		// Estimate non-canvas vertical space: HUD + goal bar + controls + padding.
-		if (window.innerWidth < 768) {
+		{
 			const viewportH = window.visualViewport?.height ?? window.innerHeight;
-			const NON_CANVAS_HEIGHT = 200;
+			const isMobile = window.innerWidth < 768;
+			const NON_CANVAS_HEIGHT = isMobile ? 200 : 220; // desktop HUD is slightly taller
+			const NON_CANVAS_WIDTH  = isMobile ? 16 : 48;   // desktop has more horizontal chrome
 			const availH = viewportH - NON_CANVAS_HEIGHT;
-			const availW = window.innerWidth - 16;
+			const availW = window.innerWidth - NON_CANVAS_WIDTH;
 			const maxByHeight = Math.floor(availH / (gridRows * 2));
 			const maxByWidth  = Math.floor(availW / (gridCols * 2));
-			const mobileBallRadius = Math.min(maxByHeight, maxByWidth);
-			if (mobileBallRadius < ballRadius) {
-				ballRadius = Math.max(mobileBallRadius, 8);
+			const fittedBallRadius = Math.min(maxByHeight, maxByWidth);
+			if (fittedBallRadius < ballRadius) {
+				ballRadius = Math.max(fittedBallRadius, 8);
 			}
 		}
 

@@ -1117,6 +1117,8 @@ body::after {
 	border-radius: 5px;
 	box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
 	max-width: 100%;
+	max-height: calc(100vh - 220px); /* safety net: never overflow viewport height */
+	width: auto;
 	height: auto;
 }
 
