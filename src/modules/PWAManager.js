@@ -95,9 +95,6 @@ class PWAManagerClass {
 		this._wireInstallToast();
 		this._wireUpdateBanner();
 
-		// Hide the install toast as soon as the game starts — only relevant on home screen
-		EventEmitter.on(CONSTANTS.EVENTS.GAME_START, () => this._hideInstallToast());
-
 		// Apply initial offline state if already offline at load time
 		if (!this.isOnline) {
 			this._setOfflineIndicator(true);

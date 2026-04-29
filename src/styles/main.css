@@ -544,9 +544,9 @@ body::after {
 }
 
 .game-logo {
-	width: min(80%, 340px);
-	max-width: 340px;
-	max-height: min(22vh, 240px);
+	width: min(82%, 480px);
+	max-width: 480px;
+	max-height: min(35vh, 380px);
 	height: auto;
 	object-fit: contain;
 	margin: 0 auto 0.5rem;
@@ -626,9 +626,9 @@ body::after {
 
 @media (min-width: 600px) {
 	.game-logo {
-		width: min(82%, 480px);
-		max-width: 480px;
-		max-height: min(38vh, 380px);
+		width: min(85%, 560px);
+		max-width: 560px;
+		max-height: min(40vh, 440px);
 	}
 }
 
@@ -642,9 +642,9 @@ body::after {
 	}
 
 	.game-logo {
-		width: min(85%, 720px);
-		max-width: 720px;
-		max-height: min(42vh, 520px);
+		width: min(85%, 800px);
+		max-width: 800px;
+		max-height: min(44vh, 580px);
 	}
 }
 
@@ -1871,7 +1871,9 @@ body::after {
 	}
 	
 	.game-logo {
-		max-width: 180px;
+		width: min(80%, 420px);
+		max-width: 420px;
+		max-height: min(34vh, 340px);
 	}
 	
 	.difficulty-buttons {

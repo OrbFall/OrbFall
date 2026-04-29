@@ -186,6 +186,9 @@ function setupMenuListeners() {
 	if (startBtn) {
 		startBtn.addEventListener('click', async () => {
 			console.log('Start button clicked');
+
+			// Dismiss install toast — only relevant on the home screen
+			PWAManager._hideInstallToast();
 			
 			// Ensure AudioManager is initialized and resumed
 			AudioManager.initialize();
