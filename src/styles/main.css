@@ -634,9 +634,9 @@ body::after {
 	}
 
 	.game-logo {
-		width: min(78%, 560px);
-		max-width: 560px;
-		max-height: min(36vh, 420px);
+		width: min(85%, 720px);
+		max-width: 720px;
+		max-height: min(42vh, 520px);
 	}
 }
 
