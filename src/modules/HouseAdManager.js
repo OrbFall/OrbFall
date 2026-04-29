@@ -44,7 +44,7 @@ const HOUSE_ADS = [
 				       padding:clamp(1.25rem,4%,2rem) clamp(1.25rem,4%,2rem);
 				       box-sizing:border-box;font-family:system-ui,-apple-system,sans-serif;">
 				<div style="display:flex;align-items:center;justify-content:space-between;">
-					<img src="/src/img/house-ads/gusto4tech-logo-sm.png"
+					<img src="src/img/house-ads/gusto4tech-logo-sm.png"
 					     alt="Gusto4Tech"
 					     style="height:clamp(36px,8vw,56px);width:auto;object-fit:contain;flex-shrink:0;">
 					<span style="font-size:clamp(0.62rem,1.6vw,0.7rem);text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8;">gusto4tech.com</span>
@@ -83,7 +83,7 @@ const HOUSE_ADS = [
 				       box-sizing:border-box;font-family:system-ui,-apple-system,sans-serif;
 				       border-left:4px solid #e63946;">
 				<div style="display:flex;align-items:center;justify-content:space-between;">
-					<img src="/src/img/house-ads/thecomicsplace-logo.png"
+					<img src="src/img/house-ads/thecomicsplace-logo.png"
 					     alt="The Comics Place"
 					     style="height:clamp(36px,8vw,56px);width:auto;object-fit:contain;flex-shrink:0;">
 					<span style="font-size:clamp(0.68rem,1.8vw,0.78rem);font-weight:700;color:#e63946;text-transform:uppercase;letter-spacing:0.1em;">Bellingham, WA</span>
@@ -122,7 +122,7 @@ const HOUSE_ADS = [
 				       padding:clamp(1.25rem,4%,2rem) clamp(1.25rem,4%,2rem);
 				       box-sizing:border-box;font-family:system-ui,-apple-system,sans-serif;">
 				<div style="display:flex;align-items:center;justify-content:space-between;">
-					<img src="/src/img/house-ads/venturemechanics-logo.png"
+					<img src="src/img/house-ads/venturemechanics-logo.png"
 					     alt="Venture Mechanics"
 					     style="height:clamp(40px,9vw,64px);width:auto;object-fit:contain;flex-shrink:0;">
 					<span style="background:#f97316;color:#fff;font-size:clamp(0.58rem,1.5vw,0.68rem);font-weight:700;text-transform:uppercase;letter-spacing:0.07em;padding:0.25em 0.65em;border-radius:3px;white-space:nowrap;flex-shrink:0;">Seattle &middot; Bellevue</span>
