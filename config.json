@@ -1133,8 +1133,8 @@
 	"monetization": {
 		"ads": {
 			"enabled": true,
-			"provider": "adcash",
-			"adcashZoneId": "28iwpwhra2",
+			"provider": "house",
+			"adcashZoneId": "",
 			"adSenseId": "ca-pub-9808238396490185",
 			"slotIds": {
 				"banner": "XXXXXXXXXX",
@@ -1150,7 +1150,7 @@
 		},
 		"houseAds": {
 			"enabled": true,
-			"onlyHouseAds": false
+			"onlyHouseAds": true
 		},
 		"lemonsqueezy": {
 			"enabled": true,
