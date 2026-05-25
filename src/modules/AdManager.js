@@ -116,13 +116,18 @@ class AdManagerClass {
 	loadAdScript() {
 		if (this.scriptLoaded) return;
 
-		const adSenseId = ConfigManager.get('monetization.ads.adSenseId', '');
-		if (!adSenseId) {
+		const provider = ConfigManager.get('monetization.ads.provider', 'adcash');
+
+		if (provider === 'adcash') {
+			// aclib.js is loaded via <script> in index.html.
+			// Mark as loaded so runAutoTag calls work immediately.
+			this.scriptLoaded = true;
 			return;
 		}
 
-		// The AdSense script is already loaded via <script> in index.html.
-		// Mark as loaded so interstitial push() calls work immediately.
+		// Legacy: adSenseId-based providers
+		const adSenseId = ConfigManager.get('monetization.ads.adSenseId', '');
+		if (!adSenseId) return;
 		this.scriptLoaded = true;
 	}
 
@@ -272,21 +277,18 @@ class AdManagerClass {
 		const adContainer = document.createElement('div');
 		adContainer.className = 'interstitial-ad-container';
 
-		const adSenseId = ConfigManager.get('monetization.ads.adSenseId', '');
-		const slotId = ConfigManager.get('monetization.ads.slotIds.interstitial', '');
-		const showAdSense = !useHouseAd && adSenseId && slotId && slotId !== 'XXXXXXXXXX';
+		const provider = ConfigManager.get('monetization.ads.provider', 'adcash');
+		const adcashZoneId = ConfigManager.get('monetization.ads.adcashZoneId', '');
+		const showAdcash = !useHouseAd && provider === 'adcash' && adcashZoneId;
 
 		if (useHouseAd) {
 			adContainer.appendChild(HouseAdManager.renderAdElement());
-		} else if (showAdSense) {
-			const ins = document.createElement('ins');
-			ins.className = 'adsbygoogle';
-			ins.style.display = 'block';
-			ins.setAttribute('data-ad-client', adSenseId);
-			ins.setAttribute('data-ad-slot', slotId);
-			ins.setAttribute('data-ad-format', 'auto');
-			ins.setAttribute('data-full-width-responsive', 'true');
-			adContainer.appendChild(ins);
+		} else if (showAdcash) {
+			// Adcash auto tag — container will be filled by aclib.runAutoTag
+			const placeholder = document.createElement('div');
+			placeholder.id = 'adcash-interstitial-zone';
+			placeholder.style.cssText = 'width:100%;height:100%;min-height:180px;';
+			adContainer.appendChild(placeholder);
 		} else {
 			// Placeholder for development/testing
 			adContainer.innerHTML = '<p style="color: #888; padding: 40px;">Ad Placeholder</p>';
@@ -295,8 +297,8 @@ class AdManagerClass {
 		overlay.appendChild(adContainer);
 
 		// Emit tracking event so AnalyticsManager can record the impression
-		const adType = useHouseAd ? 'house' : 'adsense';
-		const adId = useHouseAd ? (adContainer.querySelector('[data-house-ad-id]')?.dataset?.houseAdId ?? 'house') : 'adsense';
+		const adType = useHouseAd ? 'house' : 'adcash';
+		const adId = useHouseAd ? (adContainer.querySelector('[data-house-ad-id]')?.dataset?.houseAdId ?? 'house') : `adcash-${adcashZoneId}`;
 		EventEmitter.emit(CONSTANTS.EVENTS.AD_SHOWN, { type: adType, provider: adType, adId });
 		const skipButton = document.createElement('button');
 		skipButton.className = 'skip-ad-button';
@@ -327,13 +329,12 @@ class AdManagerClass {
 		document.body.appendChild(overlay);
 		document.body.classList.add('interstitial-active');
 
-		// push() must be called AFTER the <ins> is in the DOM so AdSense can
-		// measure the container and fire the ad request.
-		if (showAdSense) {
+		// Call Adcash to fill the placeholder after it's in the DOM
+		if (showAdcash) {
 			try {
-				(window.adsbygoogle = window.adsbygoogle || []).push({});
+				aclib.runAutoTag({ zoneId: adcashZoneId });
 			} catch (_e) {
-				// AdSense library not loaded — graceful degradation
+				// aclib not loaded — graceful degradation
 			}
 		}
 	}

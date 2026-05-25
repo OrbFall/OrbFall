@@ -1,5 +1,5 @@
 {
-	"buildVersion": "orbfall-v26.0428.0176",
+	"buildVersion": "orbfall-v26.0524.0188",
 	"game": {
 		"gridRows": 22,
 		"gridCols": 15,
@@ -1133,7 +1133,8 @@
 	"monetization": {
 		"ads": {
 			"enabled": true,
-			"provider": "adsense",
+			"provider": "adcash",
+			"adcashZoneId": "28iwpwhra2",
 			"adSenseId": "ca-pub-9808238396490185",
 			"slotIds": {
 				"banner": "XXXXXXXXXX",
@@ -1149,7 +1150,7 @@
 		},
 		"houseAds": {
 			"enabled": true,
-			"onlyHouseAds": true
+			"onlyHouseAds": false
 		},
 		"lemonsqueezy": {
 			"enabled": true,

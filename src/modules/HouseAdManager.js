@@ -105,6 +105,50 @@ const HOUSE_ADS = [
 	},
 
 	// -------------------------------------------------------------------------
+	// RealEngineers.ai — AI-powered candidate screening from real engineering artifacts
+	// -------------------------------------------------------------------------
+	{
+		id: 'real-engineers',
+		url: 'https://realengineers.ai',
+		html() {
+			const tags = ['CAD &amp; Schematics', 'FEA Analysis', 'Engineering Math', 'Project Artifacts', 'Skills Evidence'];
+			const tagHtml = tags.map(s =>
+				`<span style="background:#f0f9ff;color:#0369a1;font-size:clamp(0.6rem,1.6vw,0.7rem);padding:0.2em 0.55em;border-radius:3px;border:1px solid #bae6fd;white-space:nowrap;">${s}</span>`
+			).join('');
+			return `<a href="https://realengineers.ai"
+				target="_blank" rel="noopener noreferrer"
+				style="display:flex;flex-direction:column;justify-content:center;gap:clamp(0.75rem,2.5%,1.25rem);width:100%;height:100%;min-height:180px;
+				       text-decoration:none;background:#ffffff;color:#0f172a;
+				       padding:clamp(1.25rem,4%,2rem) clamp(1.25rem,4%,2rem);
+				       box-sizing:border-box;font-family:system-ui,-apple-system,sans-serif;
+				       border-top:3px solid #0284c7;">
+				<div style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;">
+					<img src="./src/img/house-ads/RE.png"
+					     alt="RealEngineers.ai"
+					     style="height:clamp(36px,8vw,56px);width:auto;object-fit:contain;flex-shrink:0;">
+					<span style="background:#0284c7;color:#fff;font-size:clamp(0.56rem,1.4vw,0.65rem);font-weight:700;text-transform:uppercase;letter-spacing:0.07em;padding:0.25em 0.65em;border-radius:3px;white-space:nowrap;flex-shrink:0;">AI Hiring</span>
+				</div>
+				<div style="font-size:clamp(0.92rem,2.6vw,1.08rem);font-weight:600;color:#0f172a;line-height:1.35;">
+					See the Real Engineering Work<br>
+					<span style="color:#64748b;font-weight:400;font-size:0.9em;">before the interview</span>
+				</div>
+				<div style="font-size:clamp(0.78rem,2.2vw,0.88rem);color:#475569;line-height:1.6;">
+					RealEngineers extracts skills from CAD, schematics, FEA, and project artifacts.
+					Hiring managers see the evidence early, understand the decisions and tradeoffs,
+					and start interviews on the third question.
+				</div>
+				<div style="display:flex;flex-wrap:wrap;gap:0.4rem;">
+					${tagHtml}
+				</div>
+				<div style="border-top:1px solid #e2e8f0;padding-top:0.65rem;display:flex;justify-content:space-between;align-items:center;">
+					<span style="font-size:clamp(0.66rem,1.8vw,0.76rem);color:#94a3b8;">realengineers.ai</span>
+					<span style="font-size:clamp(0.78rem,2vw,0.88rem);font-weight:600;color:#0284c7;">Learn More &rarr;</span>
+				</div>
+			</a>`;
+		}
+	},
+
+	// -------------------------------------------------------------------------
 	// Venture Mechanics — startup community, events, accelerator (Seattle/Bellevue)
 	// -------------------------------------------------------------------------
 	{
