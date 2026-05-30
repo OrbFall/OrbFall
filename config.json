@@ -1150,7 +1150,8 @@
 		},
 		"houseAds": {
 			"enabled": true,
-			"onlyHouseAds": true
+			"onlyHouseAds": true,
+			"share": 0.2
 		},
 		"lemonsqueezy": {
 			"enabled": true,

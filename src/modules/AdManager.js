@@ -251,6 +251,9 @@ class AdManagerClass {
 		const provider = ConfigManager.get('monetization.ads.provider', 'adsense');
 		if (provider === 'house') return true;
 		if (ConfigManager.get('monetization.houseAds.onlyHouseAds', false)) return true;
+		// Reserve a 20% house-ad share even when a paid provider is active.
+		const houseAdShare = ConfigManager.get('monetization.houseAds.share', 0.2);
+		if (houseAdShare > 0 && Math.random() < houseAdShare) return true;
 		return false;
 	}
 

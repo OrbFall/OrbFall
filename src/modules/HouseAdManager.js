@@ -17,6 +17,8 @@
  * ============================================================================
  */
 
+import AnalyticsManager from './AnalyticsManager.js';
+
 /**
  * @typedef {Object} HouseAd
  * @property {string} id   - Unique identifier
@@ -149,6 +151,53 @@ const HOUSE_ADS = [
 	},
 
 	// -------------------------------------------------------------------------
+	// zinzu.io — customer journey analytics, timeline pattern search (Seattle)
+	// -------------------------------------------------------------------------
+	{
+		id: 'zinzu',
+		url: 'https://zinzu.io',
+		html() {
+			const tags = ['Customer Journeys', 'Timeline Analytics', 'Pattern Search', 'No SQL', 'Pilot Program'];
+			const tagHtml = tags.map(s =>
+				`<span style="background:#f5f3ff;color:#6d28d9;font-size:clamp(0.6rem,1.6vw,0.7rem);padding:0.2em 0.55em;border-radius:3px;border:1px solid #ddd6fe;white-space:nowrap;">${s}</span>`
+			).join('');
+			return `<a href="https://zinzu.io"
+				target="_blank" rel="noopener noreferrer"
+				style="display:flex;flex-direction:column;justify-content:center;gap:clamp(0.75rem,2.5%,1.25rem);width:100%;height:100%;min-height:180px;
+				       text-decoration:none;background:#ffffff;color:#0f0a1e;
+				       padding:clamp(1.25rem,4%,2rem) clamp(1.25rem,4%,2rem);
+				       box-sizing:border-box;font-family:system-ui,-apple-system,sans-serif;
+				       border-left:4px solid #7c3aed;">
+				<div style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;">
+					<img src="./src/img/house-ads/zinzu.avif"
+					     alt="Zinzu"
+					     style="height:clamp(32px,7vw,48px);width:auto;object-fit:contain;flex-shrink:0;">
+					<span style="background:#7c3aed;color:#fff;font-size:clamp(0.56rem,1.4vw,0.65rem);font-weight:700;text-transform:uppercase;letter-spacing:0.07em;padding:0.25em 0.65em;border-radius:3px;white-space:nowrap;flex-shrink:0;">Seattle, WA</span>
+				</div>
+				<div style="font-size:clamp(0.92rem,2.6vw,1.08rem);font-weight:600;color:#0f0a1e;line-height:1.35;">
+					Your Data Has a Story.<br>
+					<span style="color:#6d28d9;font-weight:400;font-size:0.9em;">Most tools only show the scoreboard.</span>
+				</div>
+				<div style="font-size:clamp(0.78rem,2.2vw,0.88rem);color:#374151;line-height:1.6;">
+					Zinzu rebuilds every customer's timeline across your systems so you can
+					find patterns, trace journeys, and understand the story behind the numbers&thinsp;&mdash;&thinsp;no SQL required.
+				</div>
+				<div style="background:#f5f3ff;border-radius:4px;padding:clamp(0.5rem,2%,0.75rem) 0.75rem;display:flex;flex-direction:column;gap:0.35rem;border:1px solid #ddd6fe;">
+					<div style="font-size:clamp(0.72rem,2vw,0.82rem);color:#7c3aed;font-weight:700;">&#9733; Orb&bull;Fall uses Zinzu to analyze real gameplay data</div>
+					<div style="font-size:clamp(0.72rem,2vw,0.82rem);color:#374151;">Looking for pilot customers &mdash; sign up now for <strong style="color:#7c3aed;">free</strong></div>
+				</div>
+				<div style="display:flex;flex-wrap:wrap;gap:0.4rem;">
+					${tagHtml}
+				</div>
+				<div style="border-top:1px solid #e9d5ff;padding-top:0.65rem;display:flex;justify-content:space-between;align-items:center;">
+					<span style="font-size:clamp(0.66rem,1.8vw,0.76rem);color:#9ca3af;">team@zinzu.io</span>
+					<span style="font-size:clamp(0.78rem,2vw,0.88rem);font-weight:600;color:#7c3aed;">Sign Up Free &rarr;</span>
+				</div>
+			</a>`;
+		}
+	},
+
+	// -------------------------------------------------------------------------
 	// Venture Mechanics — startup community, events, accelerator (Seattle/Bellevue)
 	// -------------------------------------------------------------------------
 	{
@@ -217,6 +266,14 @@ class HouseAdManagerClass {
 		wrapper.style.cssText = 'display:flex;flex-direction:column;width:100%;height:100%;';
 		wrapper.dataset.houseAdId = ad.id;
 		wrapper.innerHTML = ad.html();
+		wrapper.addEventListener('click', (e) => {
+			const link = e.target.closest('a[href]');
+			AnalyticsManager.track('House Ad Clicked', {
+				ad_id: ad.id,
+				ad_url: ad.url,
+				click_target: link ? link.href : 'unknown',
+			});
+		});
 		return wrapper;
 	}
 
