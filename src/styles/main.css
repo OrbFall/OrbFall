@@ -38,6 +38,7 @@ body::after {
 	width: 100%;
 	max-width: 1200px;
 	height: 100vh;
+	padding-top: env(safe-area-inset-top);
 	position: relative;
 }
 
@@ -1124,7 +1125,7 @@ body::after {
 	border-radius: 5px;
 	box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
 	max-width: 100%;
-	max-height: calc(100vh - 220px); /* safety net: never overflow viewport height */
+	max-height: calc(100vh - 220px - env(safe-area-inset-top)); /* safety net: never overflow viewport height */
 	width: auto;
 	height: auto;
 }
@@ -2204,7 +2205,7 @@ body:not(.home-screen):not(.interstitial-active) .supporter-button {
 /* When appended to body as fallback (interstitial): fixed top-right */
 body > .supporter-button {
 	position: fixed;
-	top: 0.35rem;
+	top: calc(0.35rem + env(safe-area-inset-top));
 	right: 0.6rem;
 	z-index: 900;
 }
@@ -2336,7 +2337,7 @@ body.interstitial-active .supporter-button {
 /* Update notification banner — appears at top of page */
 .pwa-update-banner {
 	position: fixed;
-	top: 0;
+	top: env(safe-area-inset-top);
 	left: 0;
 	right: 0;
 	background: #1e3a5f;

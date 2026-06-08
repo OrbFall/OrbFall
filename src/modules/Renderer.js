@@ -44,8 +44,11 @@ class Renderer {
 		// Estimate non-canvas vertical space: HUD + goal bar + controls + padding.
 		{
 			const viewportH = window.visualViewport?.height ?? window.innerHeight;
+			// Account for iOS notch/status bar safe area in standalone PWA mode
+			const appEl = document.getElementById('app');
+			const safeAreaTop = appEl ? (parseInt(getComputedStyle(appEl).paddingTop) || 0) : 0;
 			const isMobile = window.innerWidth < 768;
-			const NON_CANVAS_HEIGHT = isMobile ? 200 : 220; // desktop HUD is slightly taller
+			const NON_CANVAS_HEIGHT = (isMobile ? 200 : 220) + safeAreaTop; // desktop HUD is slightly taller
 			const NON_CANVAS_WIDTH  = isMobile ? 16 : 48;   // desktop has more horizontal chrome
 			const availH = viewportH - NON_CANVAS_HEIGHT;
 			const availW = window.innerWidth - NON_CANVAS_WIDTH;
