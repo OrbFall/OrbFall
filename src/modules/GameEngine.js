@@ -69,7 +69,6 @@ class GameEngineClass {
 		this.animationFrameId = null;
 		
 		// Warning state tracking
-		this.lastWarningSecond = null;
 		this.lastDangerRow = null;
 		
 		// Debug mode state
@@ -894,25 +893,9 @@ class GameEngineClass {
 			const timeRemaining = LevelManager.getRemainingTime();
 			timerDisplay.textContent = LevelManager.getTimerDisplay();
 			
-			// Play warning beep in last 5 seconds
-			if (timeRemaining <= 5 && timeRemaining > 0) {
-				const currentSecond = Math.floor(timeRemaining);
-				if (!this.lastWarningSecond || this.lastWarningSecond !== currentSecond) {
-					this.lastWarningSecond = currentSecond;
-					AudioManager.playTimeWarning();
-				}
-			}
-
-			// Visual time-warning: amber pulse ≤15s, red urgent flash ≤5s
-			const canvas = this.renderer?.canvas;
+			// Visual urgent: timer turns red when ≤5s (about to lose the level)
 			const urgent = timeRemaining > 0 && timeRemaining <= 5;
-			const warning = timeRemaining > 0 && timeRemaining <= 15;
 			timerDisplay.classList.toggle('timer-urgent', urgent);
-			timerDisplay.classList.toggle('timer-warning', warning && !urgent);
-			if (canvas) {
-				canvas.classList.toggle('canvas-urgent', urgent);
-				canvas.classList.toggle('canvas-warning', warning && !urgent);
-			}
 		}
 		
 		// Update score display
@@ -2398,13 +2381,9 @@ class GameEngineClass {
 		this.state = CONSTANTS.GAME_STATES.LEVEL_COMPLETE;
 
 		// Clear time-warning visual state
-		this.lastWarningSecond = null;
 		const timerDisplay = document.getElementById('timerDisplay');
 		if (timerDisplay) {
-			timerDisplay.classList.remove('timer-warning', 'timer-urgent');
-		}
-		if (this.renderer?.canvas) {
-			this.renderer.canvas.classList.remove('canvas-warning', 'canvas-urgent');
+			timerDisplay.classList.remove('timer-urgent');
 		}
 		
 		// Clear saves — game ended naturally
