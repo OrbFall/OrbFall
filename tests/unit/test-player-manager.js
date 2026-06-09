@@ -141,6 +141,22 @@ export function runPlayerManagerTests() {
 		assert(unlockedLevels.includes(2), 'Level 2 should be unlocked');
 	});
 	
+	// Test: Completing level 30 does not unlock level 31
+	test('updateStats() does not unlock level 31 after completing level 30', () => {
+		PlayerManager.switchPlayer('Guest');
+
+		PlayerManager.updateStats({
+			gameCompleted: true,
+			score: 500,
+			level: 30,
+			difficulty: 1
+		});
+
+		const data = PlayerManager.getCurrentPlayerData();
+		const unlockedLevels = data.levelProgress.unlockedLevelsByDifficulty["1"];
+		assert(!unlockedLevels.includes(31), 'Level 31 must never be unlocked (MAX_LEVELS = 30)');
+	});
+
 	// Test: Level completion is tracked per difficulty
 	test('updateStats() tracks completions per difficulty', () => {
 		PlayerManager.addPlayer('TestPlayer1');

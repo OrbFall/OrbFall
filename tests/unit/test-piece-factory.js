@@ -679,6 +679,88 @@ testSuite.tests.push({
 	}
 });
 
+// ─── progressionOverrides.featureUnlocks Tests ────────────────────────────────
+
+// Test: setProgressionOverrides with featureUnlocks overrides global config
+testSuite.tests.push({
+	name: 'featureUnlocks override - takes priority over global config',
+	async run() {
+		PieceFactory.reset();
+		// Override: EXPLODING unlocked at level 1, painters locked until much later
+		PieceFactory.setProgressionOverrides({
+			featureUnlocks: {
+				[CONSTANTS.BALL_TYPES.EXPLODING]: 1,
+				[CONSTANTS.BALL_TYPES.PAINTER_HORIZONTAL]: 99,
+				[CONSTANTS.BALL_TYPES.PAINTER_VERTICAL]: 99,
+				[CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NE]: 99,
+				[CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NW]: 99
+			}
+		});
+
+		const unlocked = PieceFactory._getUnlockedSpecialTypes(1);
+
+		PieceFactory.clearProgressionOverrides();
+
+		if (!unlocked.includes(CONSTANTS.BALL_TYPES.EXPLODING)) {
+			throw new Error('EXPLODING should be unlocked at level 1 with override');
+		}
+		if (unlocked.includes(CONSTANTS.BALL_TYPES.PAINTER_HORIZONTAL)) {
+			throw new Error('PAINTER_HORIZONTAL should be locked at level 1 with override');
+		}
+	}
+});
+
+// Test: clearProgressionOverrides removes featureUnlocks override
+testSuite.tests.push({
+	name: 'featureUnlocks override - clearProgressionOverrides restores global config',
+	async run() {
+		PieceFactory.reset();
+		PieceFactory.setProgressionOverrides({
+			featureUnlocks: { [CONSTANTS.BALL_TYPES.EXPLODING]: 1 }
+		});
+		PieceFactory.clearProgressionOverrides();
+
+		// Without override, global config applies (EXPLODING unlocks at level 19)
+		const unlocked = PieceFactory._getUnlockedSpecialTypes(1);
+
+		if (unlocked.includes(CONSTANTS.BALL_TYPES.EXPLODING)) {
+			throw new Error('EXPLODING should not be unlocked at level 1 after override cleared');
+		}
+	}
+});
+
+// Test: PAINTER_DIAGONAL_NW locked until level 19 under Rising Tide override
+testSuite.tests.push({
+	name: 'featureUnlocks override - PAINTER_DIAGONAL_NW locked at level 14 with Rising Tide schedule',
+	async run() {
+		PieceFactory.reset();
+		PieceFactory.setProgressionOverrides({
+			featureUnlocks: {
+				[CONSTANTS.BALL_TYPES.EXPLODING]: 1,
+				[CONSTANTS.BALL_TYPES.PAINTER_HORIZONTAL]: 5,
+				[CONSTANTS.BALL_TYPES.PAINTER_VERTICAL]: 9,
+				[CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NE]: 13,
+				[CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NW]: 19
+			}
+		});
+
+		const atL14 = PieceFactory._getUnlockedSpecialTypes(14);
+		const atL19 = PieceFactory._getUnlockedSpecialTypes(19);
+
+		PieceFactory.clearProgressionOverrides();
+
+		if (atL14.includes(CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NW)) {
+			throw new Error('PAINTER_DIAGONAL_NW should be locked at level 14 in Rising Tide schedule');
+		}
+		if (!atL19.includes(CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NW)) {
+			throw new Error('PAINTER_DIAGONAL_NW should unlock at level 19 in Rising Tide schedule');
+		}
+		if (!atL19.includes(CONSTANTS.BALL_TYPES.EXPLODING)) {
+			throw new Error('EXPLODING should still be unlocked at level 19 (was unlocked at level 1)');
+		}
+	}
+});
+
 // ============================================
 // Pity Timer Tests
 // ============================================

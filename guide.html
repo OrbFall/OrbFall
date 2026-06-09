@@ -140,39 +140,39 @@
 				
 				<div class="special-balls">
 					<div class="special-ball-card">
-						<div class="ball-visual exploding"></div>
-						<h3>Exploding Orb</h3>
-						<p>When an exploding orb is part of any match, it creates a massive explosion that clears EVERYTHING - even blocking orbs!</p>
+						<canvas class="ball-canvas" id="orb-exploding" width="80" height="80"></canvas>
+						<h3>Bomb</h3>
+						<p>When a bomb is part of any match, it creates a massive explosion that clears EVERYTHING - even blocking orbs!</p>
 					</div>
 
 					<div class="special-ball-card">
-						<div class="ball-visual painter-h"></div>
+						<canvas class="ball-canvas" id="orb-painter-h" width="80" height="80"></canvas>
 						<h3>Horizontal Painter</h3>
 						<p>When this orb is in any match, it paints the entire row its color! Painted orbs instantly check for new matches.</p>
 					</div>
 
 					<div class="special-ball-card">
-						<div class="ball-visual painter-v"></div>
+						<canvas class="ball-canvas" id="orb-painter-v" width="80" height="80"></canvas>
 						<h3>Vertical Painter</h3>
 						<p>When this orb is in any match, it paints the entire column its color! Perfect for setting up cascades.</p>
 					</div>
 
 					<div class="special-ball-card">
-						<div class="ball-visual painter-d-ne"></div>
+						<canvas class="ball-canvas" id="orb-painter-ne" width="80" height="80"></canvas>
 						<h3>Diagonal Painter</h3>
-						<p>When this orb is in any match, it paints the NE-SW diagonal line (↗↙) its color! Creates unique cascade patterns.</p>
+						<p>When this orb is in any match, it paints the NE-SW diagonal line its color! Creates unique cascade patterns.</p>
 					</div>
 
 					<div class="special-ball-card">
-						<div class="ball-visual painter-d-nw"></div>
+						<canvas class="ball-canvas" id="orb-painter-nw" width="80" height="80"></canvas>
 						<h3>Diagonal Painter</h3>
-						<p>When this orb is in any match, it paints the NW-SE diagonal line (↖↘) its color! Creates unique cascade patterns.</p>
+						<p>When this orb is in any match, it paints the NW-SE diagonal line its color! Creates unique cascade patterns.</p>
 					</div>
 
 					<div class="special-ball-card">
-						<div class="ball-visual blocking"></div>
-						<h3>Blocking Orb</h3>
-						<p>Falls from the center - can't be matched! Only explosions can destroy them. Plan around them!</p>
+						<canvas class="ball-canvas" id="orb-blocking" width="80" height="80"></canvas>
+						<h3>Block</h3>
+						<p>Can't be matched! Only explosions can destroy them. Plan around them!</p>
 					</div>
 				</div>
 			</div>
@@ -315,5 +315,139 @@
 			</p>
 		</div>
 	</div>
+	<script>
+	(function () {
+		const SIZE = 80;
+		const CX = SIZE / 2;
+		const CY = SIZE / 2;
+		const R  = (SIZE / 2) * 0.82;
+
+		function drawArrow(canvas, color, angle) {
+			const ctx = canvas.getContext('2d');
+			const halfLen    = R * 0.9;
+			const headLen    = R * 0.38;
+			const headWidth  = R * 0.34;
+			const shaftWidth = R * 0.14;
+			ctx.save();
+			ctx.translate(CX, CY);
+			ctx.rotate(angle);
+			ctx.beginPath();
+			ctx.moveTo(-halfLen, 0);
+			ctx.lineTo(-halfLen + headLen, -headWidth);
+			ctx.lineTo(-halfLen + headLen, -shaftWidth);
+			ctx.lineTo( halfLen - headLen, -shaftWidth);
+			ctx.lineTo( halfLen - headLen, -headWidth);
+			ctx.lineTo( halfLen, 0);
+			ctx.lineTo( halfLen - headLen,  headWidth);
+			ctx.lineTo( halfLen - headLen,  shaftWidth);
+			ctx.lineTo(-halfLen + headLen,  shaftWidth);
+			ctx.lineTo(-halfLen + headLen,  headWidth);
+			ctx.closePath();
+			ctx.shadowBlur  = 10;
+			ctx.shadowColor = color;
+			ctx.fillStyle   = color;
+			ctx.fill();
+			ctx.shadowBlur  = 0;
+			ctx.strokeStyle = color;
+			ctx.lineWidth   = 1.5;
+			ctx.stroke();
+			ctx.restore();
+		}
+
+		function drawBomb(canvas, color) {
+			const ctx    = canvas.getContext('2d');
+			const bodyR  = R * 0.62;
+			const bodyCY = CY + R * 0.2;
+			const angle  = Math.PI / 4;
+			const surfX  = CX + bodyR * Math.sin(angle);
+			const surfY  = bodyCY - bodyR * Math.cos(angle);
+			const cylW   = bodyR * 0.42;
+			const cylH   = bodyR * 0.34;
+
+			// Sphere
+			ctx.shadowBlur  = 14;
+			ctx.shadowColor = color;
+			ctx.fillStyle   = color;
+			ctx.beginPath();
+			ctx.arc(CX, bodyCY, bodyR, 0, Math.PI * 2);
+			ctx.fill();
+			ctx.shadowBlur  = 0;
+
+			// Cylinder cap (white metallic plug)
+			ctx.save();
+			ctx.translate(surfX, surfY);
+			ctx.rotate(angle);
+			ctx.fillStyle = 'rgba(255,255,255,0.88)';
+			ctx.beginPath();
+			ctx.roundRect(-cylW / 2, -cylH, cylW, cylH, 2);
+			ctx.fill();
+			ctx.restore();
+
+			// Fuse
+			const tipX = surfX + cylH * Math.sin(angle);
+			const tipY = surfY - cylH * Math.cos(angle);
+			ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+			ctx.lineWidth   = 2;
+			ctx.lineCap     = 'round';
+			ctx.beginPath();
+			ctx.moveTo(tipX, tipY);
+			ctx.quadraticCurveTo(
+				tipX - bodyR * 0.1, tipY - bodyR * 0.3,
+				tipX + bodyR * 0.25, tipY - bodyR * 0.55
+			);
+			ctx.stroke();
+
+			// Spark
+			ctx.shadowBlur  = 8;
+			ctx.shadowColor = '#ffcc00';
+			ctx.fillStyle   = '#ffcc00';
+			ctx.beginPath();
+			ctx.arc(tipX + bodyR * 0.25, tipY - bodyR * 0.55, bodyR * 0.13, 0, Math.PI * 2);
+			ctx.fill();
+			ctx.shadowBlur = 0;
+		}
+
+		function drawBlockingSquare(canvas) {
+			const ctx    = canvas.getContext('2d');
+			const half   = R * 0.9;
+			const bevel  = R * 0.22;
+			const left   = CX - half, right  = CX + half;
+			const top    = CY - half, bottom = CY + half;
+
+			// Bottom-right shadow bevel
+			ctx.fillStyle = '#3a4858';
+			ctx.beginPath();
+			ctx.moveTo(left,         bottom); ctx.lineTo(right,         bottom);
+			ctx.lineTo(right - bevel, bottom - bevel); ctx.lineTo(left + bevel,  bottom - bevel);
+			ctx.closePath(); ctx.fill();
+			ctx.beginPath();
+			ctx.moveTo(right,        top);    ctx.lineTo(right,         bottom);
+			ctx.lineTo(right - bevel, bottom - bevel); ctx.lineTo(right - bevel, top + bevel);
+			ctx.closePath(); ctx.fill();
+
+			// Top-left highlight bevel
+			ctx.fillStyle = '#aabbcc';
+			ctx.beginPath();
+			ctx.moveTo(left,         top);    ctx.lineTo(right,         top);
+			ctx.lineTo(right - bevel, top + bevel); ctx.lineTo(left + bevel,  top + bevel);
+			ctx.closePath(); ctx.fill();
+			ctx.beginPath();
+			ctx.moveTo(left,         top);    ctx.lineTo(left + bevel,  top + bevel);
+			ctx.lineTo(left + bevel,  bottom - bevel); ctx.lineTo(left,         bottom);
+			ctx.closePath(); ctx.fill();
+
+			// Main face
+			ctx.fillStyle = '#7c8c9c';
+			ctx.fillRect(left + bevel, top + bevel, half * 2 - bevel * 2, half * 2 - bevel * 2);
+		}
+
+		drawBomb(document.getElementById('orb-exploding'), '#ff3333');
+		drawArrow(document.getElementById('orb-painter-h'),  '#22cc55', 0);
+		drawArrow(document.getElementById('orb-painter-v'),  '#00aaff', Math.PI / 2);
+		drawArrow(document.getElementById('orb-painter-ne'), '#ff8800', -Math.PI / 4);
+		drawArrow(document.getElementById('orb-painter-nw'), '#cc44ff',  Math.PI / 4);
+		drawBlockingSquare(document.getElementById('orb-blocking'));
+	})();
+	</script>
 </body>
 </html>
