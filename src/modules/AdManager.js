@@ -195,15 +195,10 @@ class AdManagerClass {
 
 	/**
 	 * Check whether an interstitial can be shown based on timing rules.
-	 * On localhost the 5-minute cooldown is skipped so the overlay can
-	 * be reached and the skip-button flow tested immediately.
 	 * @returns {boolean}
 	 */
 	canShowInterstitial() {
 		if (!this.adsEnabled || this.isAdFree()) return false;
-
-		// Bypass cooldown on local dev so the overlay is easy to test
-		if (this._isDev()) return true;
 
 		const minInterval = ConfigManager.get('monetization.ads.displayRules.interstitialMinInterval', 300000);
 		const elapsed = Date.now() - this.lastInterstitialTime;
@@ -273,7 +268,7 @@ class AdManagerClass {
 		// Ad label (transparency per constitution)
 		const label = document.createElement('div');
 		label.className = 'interstitial-label';
-		label.textContent = useHouseAd ? 'Brought to you by' : 'Advertisement';
+		label.textContent = 'Advertisement';
 		overlay.appendChild(label);
 
 		// Ad container

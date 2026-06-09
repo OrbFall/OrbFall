@@ -258,10 +258,32 @@
 				}
 			},
 			"RISING_TIDE": {
+				"featureUnlocks": {
+					"EXPLODING": 1,
+					"PAINTER_HORIZONTAL": 5,
+					"PAINTER_VERTICAL": 9,
+					"PAINTER_DIAGONAL_NE": 13,
+					"PAINTER_DIAGONAL_NW": 19
+				},
 				"levels": {
 					"1": {
 						"primaryChange": "baseline",
-						"briefing": "Rows rise over time in Rising Tide mode."
+						"specialUnlock": {
+							"add": "EXPLODING"
+						},
+						"briefing": "Rows rise over time. Bombs are active from the start!"
+					},
+					"14": {
+						"specialUnlock": {
+							"add": []
+						},
+						"briefing": "The tide keeps rising — stay ahead of it."
+					},
+					"19": {
+						"specialUnlock": {
+							"add": "PAINTER_DIAGONAL_NW"
+						},
+						"briefing": "Diagonal Painter (NW-SE) unlocked."
 					}
 				}
 			}

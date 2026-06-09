@@ -664,14 +664,19 @@ class GameEngineClass {
 		
 		// Reset PieceFactory
 		PieceFactory.reset();
+		const modeFeatureUnlocks = ConfigManager.get(`progression.modeProfiles.${this.gameMode}.featureUnlocks`, null);
 		if (this.activeProgressionState) {
 			PieceFactory.setProgressionOverrides({
 				colors: this.activeProgressionState.colors,
 				shapes: this.activeProgressionState.pieces,
-				specialTypes: this.activeProgressionState.specials
+				specialTypes: this.activeProgressionState.specials,
+				featureUnlocks: modeFeatureUnlocks
 			});
 		} else {
 			PieceFactory.clearProgressionOverrides();
+			if (modeFeatureUnlocks) {
+				PieceFactory.setProgressionOverrides({ featureUnlocks: modeFeatureUnlocks });
+			}
 		}
 		
 		// PUZZLE mode: seed the RNG for deterministic piece sequences
@@ -3067,6 +3072,141 @@ class GameEngineClass {
 	 * @returns {{label: String, className: String, effect: String}}
 	 * @private
 	 */
+
+	_createSpecialTypeCanvas(type, size = 36) {
+		const canvas = document.createElement('canvas');
+		canvas.width = size;
+		canvas.height = size;
+		const ctx = canvas.getContext('2d');
+		const cx = size / 2;
+		const cy = size / 2;
+		const radius = (size / 2) * 0.82;
+		const color = '#b0b8c8';
+
+		ctx.fillStyle = color;
+		ctx.strokeStyle = color;
+		ctx.lineWidth = 1.5;
+
+		const painterAngles = {
+			[CONSTANTS.BALL_TYPES.PAINTER_HORIZONTAL]:   0,
+			[CONSTANTS.BALL_TYPES.PAINTER_VERTICAL]:     Math.PI / 2,
+			[CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NE]: -Math.PI / 4,
+			[CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NW]:  Math.PI / 4,
+		};
+
+		if (type in painterAngles) {
+			const halfLen    = radius * 0.9;
+			const headLen    = radius * 0.38;
+			const headWidth  = radius * 0.34;
+			const shaftWidth = radius * 0.14;
+			ctx.save();
+			ctx.translate(cx, cy);
+			ctx.rotate(painterAngles[type]);
+			ctx.beginPath();
+			ctx.moveTo(-halfLen, 0);
+			ctx.lineTo(-halfLen + headLen, -headWidth);
+			ctx.lineTo(-halfLen + headLen, -shaftWidth);
+			ctx.lineTo( halfLen - headLen, -shaftWidth);
+			ctx.lineTo( halfLen - headLen, -headWidth);
+			ctx.lineTo( halfLen, 0);
+			ctx.lineTo( halfLen - headLen,  headWidth);
+			ctx.lineTo( halfLen - headLen,  shaftWidth);
+			ctx.lineTo(-halfLen + headLen,  shaftWidth);
+			ctx.lineTo(-halfLen + headLen,  headWidth);
+			ctx.closePath();
+			ctx.fill();
+			ctx.restore();
+		} else if (type === CONSTANTS.BALL_TYPES.EXPLODING) {
+			const bodyR  = radius * 0.62;
+			const bodyCY = cy + radius * 0.2;
+
+			// Sphere body
+			ctx.fillStyle = color;
+			ctx.beginPath();
+			ctx.arc(cx, bodyCY, bodyR, 0, Math.PI * 2);
+			ctx.fill();
+
+			// Cylinder cap at top-right of sphere (45° from vertical), rotated to sit flush
+			const angle = Math.PI / 4;
+			const surfX = cx + bodyR * Math.sin(angle);
+			const surfY = bodyCY - bodyR * Math.cos(angle);
+			const cylW = bodyR * 0.42;
+			const cylH = bodyR * 0.34;
+			ctx.save();
+			ctx.translate(surfX, surfY);
+			ctx.rotate(angle);
+			ctx.fillStyle = color;
+			ctx.beginPath();
+			ctx.roundRect(-cylW / 2, -cylH, cylW, cylH, 2);
+			ctx.fill();
+			ctx.restore();
+
+			// Fuse — quadratic curve from tip of cylinder
+			const tipX = surfX + cylH * Math.sin(angle);
+			const tipY = surfY - cylH * Math.cos(angle);
+			ctx.strokeStyle = color;
+			ctx.lineWidth = 1.5;
+			ctx.lineCap = 'round';
+			ctx.beginPath();
+			ctx.moveTo(tipX, tipY);
+			ctx.quadraticCurveTo(tipX - bodyR * 0.1, tipY - bodyR * 0.3, tipX + bodyR * 0.25, tipY - bodyR * 0.55);
+			ctx.stroke();
+		} else if (type === CONSTANTS.BALL_TYPES.BLOCKING) {
+			const half   = radius * 0.9;
+			const bevel  = radius * 0.22;
+			const left   = cx - half;
+			const right  = cx + half;
+			const top    = cy - half;
+			const bottom = cy + half;
+
+			// Bottom-right shadow bevel
+			ctx.fillStyle = '#3a4858';
+			ctx.beginPath();
+			ctx.moveTo(left,          bottom);
+			ctx.lineTo(right,         bottom);
+			ctx.lineTo(right - bevel,  bottom - bevel);
+			ctx.lineTo(left  + bevel,  bottom - bevel);
+			ctx.closePath();
+			ctx.fill();
+			ctx.beginPath();
+			ctx.moveTo(right,         top);
+			ctx.lineTo(right,         bottom);
+			ctx.lineTo(right - bevel,  bottom - bevel);
+			ctx.lineTo(right - bevel,  top    + bevel);
+			ctx.closePath();
+			ctx.fill();
+
+			// Top-left highlight bevel
+			ctx.fillStyle = '#aabbcc';
+			ctx.beginPath();
+			ctx.moveTo(left,          top);
+			ctx.lineTo(right,         top);
+			ctx.lineTo(right - bevel,  top    + bevel);
+			ctx.lineTo(left  + bevel,  top    + bevel);
+			ctx.closePath();
+			ctx.fill();
+			ctx.beginPath();
+			ctx.moveTo(left,          top);
+			ctx.lineTo(left  + bevel,  top    + bevel);
+			ctx.lineTo(left  + bevel,  bottom - bevel);
+			ctx.lineTo(left,          bottom);
+			ctx.closePath();
+			ctx.fill();
+
+			// Main face
+			ctx.fillStyle = '#7c8c9c';
+			ctx.fillRect(left + bevel, top + bevel, half * 2 - bevel * 2, half * 2 - bevel * 2);
+
+		} else {
+			ctx.font = `${size * 0.5}px monospace`;
+			ctx.textAlign = 'center';
+			ctx.textBaseline = 'middle';
+			ctx.fillText('?', cx, cy);
+		}
+
+		return canvas;
+	}
+
 	_getSpecialMetaForChanges(specialType) {
 		const metaMap = {
 			[CONSTANTS.BALL_TYPES.EXPLODING]: {
@@ -3167,18 +3307,12 @@ class GameEngineClass {
 					const token = document.createElement('div');
 					token.className = 'level-changes-special-token';
 
-					const icon = document.createElement('span');
-					icon.className = `special-indicator-icon ${meta.className}`;
-					if (meta.className === 'pending') {
-						icon.textContent = '?';
-					}
-
+					const orbCanvas = this._createSpecialTypeCanvas(type, 36);
 					const label = document.createElement('span');
 					label.className = 'level-changes-special-label';
 					label.textContent = meta.label;
 
-					token.appendChild(icon);
-					token.appendChild(label);
+					token.appendChild(orbCanvas);
 					specialRow.appendChild(token);
 				});
 				card.appendChild(specialRow);

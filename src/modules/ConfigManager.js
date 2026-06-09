@@ -39,7 +39,8 @@ class ConfigManagerClass {
 		}
 		
 		try {
-			const response = await fetch('./config.json');
+			const configUrl = new URL('../../config.json', import.meta.url).href;
+			const response = await fetch(configUrl);
 			
 			if (!response.ok) {
 				throw new Error(`Failed to load config.json: HTTP ${response.status}`);

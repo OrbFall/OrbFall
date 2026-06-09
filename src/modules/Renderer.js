@@ -280,29 +280,125 @@ class Renderer {
 		const ballType = ball.getType();
 		const glowEffect = ConfigManager.get('rendering.glowEffect', true);
 		const shadowBlur = ConfigManager.get('rendering.shadowBlur', 5);
-		
-		// Draw ball shadow/glow
+
 		if (glowEffect) {
 			ctx.shadowBlur = shadowBlur;
 			ctx.shadowColor = color;
-		}
-		else {
+		} else {
 			ctx.shadowBlur = 0;
 		}
-		
+
+		// Painter types render as double-ended arrows instead of circles
+		const painterAngles = {
+			[CONSTANTS.BALL_TYPES.PAINTER_HORIZONTAL]:    0,
+			[CONSTANTS.BALL_TYPES.PAINTER_VERTICAL]:      Math.PI / 2,
+			[CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NE]:  -Math.PI / 4,
+			[CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NW]:   Math.PI / 4,
+		};
+		if (ballType in painterAngles) {
+			this._drawPainterArrow(x, y, radius, color, painterAngles[ballType], ctx);
+			ctx.shadowBlur = 0;
+			return;
+		}
+
+		// Blocking orbs render as a beveled metal square with corner rivets
+		if (ballType === CONSTANTS.BALL_TYPES.BLOCKING) {
+			ctx.shadowBlur = 0;
+			this._drawBlockingSquare(x, y, radius, ctx);
+			return;
+		}
+
 		// Draw ball circle
 		ctx.fillStyle = color;
 		ctx.beginPath();
 		ctx.arc(x, y, radius, 0, Math.PI * 2);
 		ctx.fill();
-		
-		// Reset shadow
+
 		ctx.shadowBlur = 0;
-		
-		// Draw special ball indicators
+
 		this._drawSpecialIndicator(ball, x, y, radius, ctx);
 	}
-	
+
+	_drawPainterArrow(x, y, radius, color, angle, ctx) {
+		const halfLen    = radius * 0.9;
+		const headLen    = radius * 0.38;
+		const headWidth  = radius * 0.34;
+		const shaftWidth = radius * 0.14;
+
+		ctx.save();
+		ctx.translate(x, y);
+		ctx.rotate(angle);
+
+		ctx.beginPath();
+		ctx.moveTo(-halfLen, 0);
+		ctx.lineTo(-halfLen + headLen, -headWidth);
+		ctx.lineTo(-halfLen + headLen, -shaftWidth);
+		ctx.lineTo( halfLen - headLen, -shaftWidth);
+		ctx.lineTo( halfLen - headLen, -headWidth);
+		ctx.lineTo( halfLen, 0);
+		ctx.lineTo( halfLen - headLen,  headWidth);
+		ctx.lineTo( halfLen - headLen,  shaftWidth);
+		ctx.lineTo(-halfLen + headLen,  shaftWidth);
+		ctx.lineTo(-halfLen + headLen,  headWidth);
+		ctx.closePath();
+
+		ctx.fillStyle = color;
+		ctx.fill();
+		ctx.strokeStyle = color;
+		ctx.lineWidth = 1.5;
+		ctx.stroke();
+
+		ctx.restore();
+	}
+
+	_drawBlockingSquare(x, y, radius, ctx) {
+		const half   = radius * 0.9;
+		const bevel  = radius * 0.22;
+		const left   = x - half;
+		const right  = x + half;
+		const top    = y - half;
+		const bottom = y + half;
+
+		// Bottom-right shadow bevel
+		ctx.fillStyle = '#3a4858';
+		ctx.beginPath();
+		ctx.moveTo(left,         bottom);
+		ctx.lineTo(right,        bottom);
+		ctx.lineTo(right - bevel, bottom - bevel);
+		ctx.lineTo(left + bevel,  bottom - bevel);
+		ctx.closePath();
+		ctx.fill();
+		ctx.beginPath();
+		ctx.moveTo(right,        top);
+		ctx.lineTo(right,        bottom);
+		ctx.lineTo(right - bevel, bottom - bevel);
+		ctx.lineTo(right - bevel, top + bevel);
+		ctx.closePath();
+		ctx.fill();
+
+		// Top-left highlight bevel
+		ctx.fillStyle = '#aabbcc';
+		ctx.beginPath();
+		ctx.moveTo(left,         top);
+		ctx.lineTo(right,        top);
+		ctx.lineTo(right - bevel, top + bevel);
+		ctx.lineTo(left + bevel,  top + bevel);
+		ctx.closePath();
+		ctx.fill();
+		ctx.beginPath();
+		ctx.moveTo(left,         top);
+		ctx.lineTo(left + bevel,  top + bevel);
+		ctx.lineTo(left + bevel,  bottom - bevel);
+		ctx.lineTo(left,         bottom);
+		ctx.closePath();
+		ctx.fill();
+
+		// Main face
+		ctx.fillStyle = '#7c8c9c';
+		ctx.fillRect(left + bevel, top + bevel, half * 2 - bevel * 2, half * 2 - bevel * 2);
+
+	}
+
 	/**
 	 * Draw special ball type indicators
 	 * @param {Ball} ball - Ball to check
@@ -316,55 +412,53 @@ class Renderer {
 	_drawSpecialIndicator(ball, x, y, radius, ctx) {
 		const ballType = ball.getType();
 		const isExploding = ballType === CONSTANTS.BALL_TYPES.EXPLODING;
-		const isPainterH = ballType === CONSTANTS.BALL_TYPES.PAINTER_HORIZONTAL;
-		const isPainterV = ballType === CONSTANTS.BALL_TYPES.PAINTER_VERTICAL;
-		const isPainterDNE = ballType === CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NE;
-		const isPainterDNW = ballType === CONSTANTS.BALL_TYPES.PAINTER_DIAGONAL_NW;
 		const isBlocking = ballType === CONSTANTS.BALL_TYPES.BLOCKING;
 		
-		ctx.strokeStyle = '#FFFFFF'; // White indicators for visibility on all ball colors
-		ctx.lineWidth = 2; // 2-pixel lines for clear visibility
-		
-		// Draw exploding indicator (star burst)
+		ctx.strokeStyle = '#FFFFFF';
+		ctx.lineWidth = 2;
+
+		// Draw cylinder cap + curved fuse on exploding orb
 		if (isExploding) {
-			this._drawStar(x, y, radius * 0.6, ctx); // Star at 60% of ball radius
-		}
-		else if (isPainterH) {
-			// Horizontal line indicator (←→)
+			const angle = Math.PI / 4;  // 45° from vertical — top-right of sphere
+			const surfX = x + radius * Math.sin(angle);
+			const surfY = y - radius * Math.cos(angle);
+
+			// Cylinder cap — rotated to sit flush on the sphere surface
+			const cylW = radius * 0.32;
+			const cylH = radius * 0.30;
+			ctx.save();
+			ctx.translate(surfX, surfY);
+			ctx.rotate(angle);
+			ctx.fillStyle = 'rgba(255,255,255,0.88)';
 			ctx.beginPath();
-			ctx.moveTo(x - radius * 0.6, y); // 60% of radius left
-			ctx.lineTo(x + radius * 0.6, y); // 60% of radius right
-			ctx.stroke();
-		}
-		else if (isPainterV) {
-			// Vertical line indicator (↑↓)
+			ctx.roundRect(-cylW / 2, -cylH, cylW, cylH, 2);
+			ctx.fill();
+			ctx.restore();
+
+			// Fuse — curved white line from tip of cylinder
+			const tipX = surfX + cylH * Math.sin(angle);
+			const tipY = surfY - cylH * Math.cos(angle);
+			const fuseEndX = tipX + radius * 0.3;
+			const fuseEndY = tipY - radius * 0.45;
+			ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+			ctx.lineWidth = 2;
+			ctx.lineCap = 'round';
 			ctx.beginPath();
-			ctx.moveTo(x, y - radius * 0.6); // 60% of radius up
-			ctx.lineTo(x, y + radius * 0.6); // 60% of radius down
+			ctx.moveTo(tipX, tipY);
+			ctx.quadraticCurveTo(tipX - radius * 0.05, tipY - radius * 0.25, fuseEndX, fuseEndY);
 			ctx.stroke();
-		}
-		else if (isPainterDNE) {
-			// NE-SW diagonal line (↗↙)
+
+			// Spark at fuse tip
+			ctx.shadowBlur = 6;
+			ctx.shadowColor = '#ffcc00';
+			ctx.fillStyle = '#ffcc00';
 			ctx.beginPath();
-			ctx.moveTo(x + radius * 0.5, y - radius * 0.5); // Top-right
-			ctx.lineTo(x - radius * 0.5, y + radius * 0.5); // Bottom-left
-			ctx.stroke();
-		}
-		else if (isPainterDNW) {
-			// NW-SE diagonal line (↖↘)
-			ctx.beginPath();
-			ctx.moveTo(x - radius * 0.5, y - radius * 0.5); // Top-left
-			ctx.lineTo(x + radius * 0.5, y + radius * 0.5); // Bottom-right
-			ctx.stroke();
+			ctx.arc(fuseEndX, fuseEndY, radius * 0.13, 0, Math.PI * 2);
+			ctx.fill();
+			ctx.shadowBlur = 0;
 		}
 		else if (isBlocking) {
-			// X mark
-			ctx.beginPath();
-			ctx.moveTo(x - radius * 0.5, y - radius * 0.5);
-			ctx.lineTo(x + radius * 0.5, y + radius * 0.5);
-			ctx.moveTo(x + radius * 0.5, y - radius * 0.5);
-			ctx.lineTo(x - radius * 0.5, y + radius * 0.5);
-			ctx.stroke();
+			// Blocking orbs are fully replaced by _drawBlockingSquare — no indicator needed
 		}
 		else {
 			// Normal ball, no indicator

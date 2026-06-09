@@ -1545,18 +1545,7 @@ body::after {
 .level-changes-special-token {
 	display: inline-flex;
 	align-items: center;
-	gap: 0.35rem;
-	padding: 0.2rem 0.45rem;
-	border-radius: 999px;
-	background: rgba(255, 255, 255, 0.08);
-	border: 1px solid rgba(255, 255, 255, 0.18);
-}
-
-.level-changes-special-label {
-	font-size: 0.78rem;
-	letter-spacing: 0.03em;
-	text-transform: none;
-	color: #e6f5ff;
+	justify-content: center;
 }
 
 .level-changes-hide-option {

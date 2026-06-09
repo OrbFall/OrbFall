@@ -49,7 +49,8 @@ class PieceFactoryClass {
 		this.progressionOverrides = {
 			colors: null,
 			shapes: null,
-			specialTypes: null
+			specialTypes: null,
+			featureUnlocks: null
 		};
 	}
 
@@ -130,7 +131,7 @@ class PieceFactoryClass {
 
 	/**
 	 * Apply explicit progression overrides for active content.
-	 * @param {{colors?: Array<String>|null, shapes?: Array<String>|null, specialTypes?: Array<String>|null}} overrides
+	 * @param {{colors?: Array<String>|null, shapes?: Array<String>|null, specialTypes?: Array<String>|null, featureUnlocks?: Object|null}} overrides
 	 */
 	setProgressionOverrides(overrides = {}) {
 		this.progressionOverrides.colors = Array.isArray(overrides.colors) && overrides.colors.length > 0
@@ -141,6 +142,9 @@ class PieceFactoryClass {
 			: null;
 		this.progressionOverrides.specialTypes = Array.isArray(overrides.specialTypes) && overrides.specialTypes.length > 0
 			? [...overrides.specialTypes]
+			: null;
+		this.progressionOverrides.featureUnlocks = overrides.featureUnlocks && typeof overrides.featureUnlocks === 'object'
+			? { ...overrides.featureUnlocks }
 			: null;
 		this.shapeBag = [];
 		this.specialBag = [];
@@ -153,6 +157,7 @@ class PieceFactoryClass {
 		this.progressionOverrides.colors = null;
 		this.progressionOverrides.shapes = null;
 		this.progressionOverrides.specialTypes = null;
+		this.progressionOverrides.featureUnlocks = null;
 	}
 	
 	/**
@@ -198,7 +203,7 @@ class PieceFactoryClass {
 			return [...this.progressionOverrides.specialTypes];
 		}
 
-		const unlocks = ConfigManager.get('specialBalls.featureUnlocks', null);
+		const unlocks = this.progressionOverrides.featureUnlocks || ConfigManager.get('specialBalls.featureUnlocks', null);
 		const allTypes = [
 			CONSTANTS.BALL_TYPES.EXPLODING,
 			CONSTANTS.BALL_TYPES.PAINTER_HORIZONTAL,
