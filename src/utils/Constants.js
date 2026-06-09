@@ -218,7 +218,8 @@ const CONSTANTS = {
 	 * Explosion radius in cells
 	 */
 	EXPLOSION_RADIUS: 3,
-	
+	MAX_LEVELS: 30,
+
 	/**
 	 * Difficulty levels
 	 */

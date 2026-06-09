@@ -24,6 +24,7 @@
 	--color-danger-rgb: 255, 68, 68;
 
 	/* Background & Surface */
+	--color-black: #000000;
 	--color-bg: #0f0f1e;
 	--color-surface-dark: #1a1a2e;
 	--color-surface-mid: #1f1f32;

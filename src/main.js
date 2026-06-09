@@ -611,11 +611,13 @@ function populateLevelGrid() {
 		levelGrid.appendChild(btn);
 	}
 	
-	// If no level is selected yet, or selected level is locked, select the highest unlocked level
+	// If no level is selected yet, or selected level is locked, select the highest valid unlocked level
 	if (!selectedLevel || !unlockedLevels.includes(selectedLevel)) {
-		const highestLevel = Math.max(...unlockedLevels);
+		const highestLevel = Math.min(Math.max(...unlockedLevels), maxLevel);
 		selectLevel(highestLevel);
 	}
+
+	updateStartButton();
 }
 
 /**
@@ -642,9 +644,9 @@ function selectLevel(level) {
 		unlockedLevels = playerData.levelProgress.unlockedLevelsByDifficulty[difficultyKey];
 	}
 	if (!unlockedLevels.includes(level)) return;
-	
+
 	selectedLevel = level;
-	
+
 	// Update UI - highlight selected level
 	const levelButtons = document.querySelectorAll('.level-btn');
 	levelButtons.forEach(btn => {
@@ -654,6 +656,14 @@ function selectLevel(level) {
 			btn.classList.remove('selected');
 		}
 	});
+
+	updateStartButton();
+}
+
+function updateStartButton() {
+	const startBtn = document.getElementById('startButton');
+	if (!startBtn) return;
+	startBtn.disabled = !selectedLevel;
 }
 
 /**

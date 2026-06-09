@@ -327,11 +327,12 @@ class PlayerManagerClass {
 				}
 			}
 			
-			// Unlock the next level
-			if (!unlockedArray.includes(level + 1)) {
-				unlockedArray.push(level + 1);
+			// Unlock the next level (capped at max)
+			const nextLevel = level + 1;
+			if (nextLevel <= CONSTANTS.MAX_LEVELS && !unlockedArray.includes(nextLevel)) {
+				unlockedArray.push(nextLevel);
 			}
-			
+
 			// Also update legacy array if CLASSIC mode
 			if (mode === 'CLASSIC') {
 				const legacyArray = player.levelProgress.unlockedLevelsByDifficulty[difficultyKey];
@@ -340,8 +341,8 @@ class PlayerManagerClass {
 						legacyArray.push(i);
 					}
 				}
-				if (!legacyArray.includes(level + 1)) {
-					legacyArray.push(level + 1);
+				if (nextLevel <= CONSTANTS.MAX_LEVELS && !legacyArray.includes(nextLevel)) {
+					legacyArray.push(nextLevel);
 				}
 			}
 		}
